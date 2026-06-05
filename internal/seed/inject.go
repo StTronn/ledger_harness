@@ -61,11 +61,18 @@ const (
 	// kind there would let the CLI accept a flag that applyInject cannot honour.
 )
 
-// Options carries the knobs the seeder accepts beyond (world, period). Today the
-// only knob is the break injection; keeping it a struct lets later phases add
-// break classes without changing the GenerateWith/SeedWith signatures.
+// Options carries the knobs the seeder accepts beyond (world, period): the
+// reconciliation break injection (SPEC §5, §7) and the missing-metadata ambiguity
+// long tail (SPEC §1, §2, §11 Phase 7). Both are post-generation transforms of
+// the clean substrate (the clean RNG stream and truth GL are never perturbed), so
+// keeping them as struct fields lets later phases add knobs without reshaping the
+// GenerateWith/SeedWith signatures.
 type Options struct {
+	// Inject seeds a reconciliation break into the agent-input fixtures.
 	Inject Inject
+	// Ambiguity, when true, strips gst_rate from a deterministic ~15% of payments
+	// (keeping sku + order_id), producing the rule-miss long tail the agent fills.
+	Ambiguity bool
 }
 
 // KnownInjects is the closed set of supported injection kinds, used by the CLI to

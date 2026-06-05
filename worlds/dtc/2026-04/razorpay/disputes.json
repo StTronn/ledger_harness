@@ -1,0 +1,44 @@
+[
+  {
+    "entity": "dispute",
+    "id": "disp_1E9XexgfdIRu7S",
+    "amount": 229002,
+    "currency": "INR",
+    "payment_id": "pay_yPp7aAHYY0iArF",
+    "status": "lost",
+    "reason": "chargeback_fraud",
+    "created_at": 1775865600,
+    "notes": {
+      "sku": "KIT-DELUXE",
+      "gst_rate": "18"
+    }
+  },
+  {
+    "entity": "dispute",
+    "id": "disp_0rrO2MR25mP6PC",
+    "amount": 467385,
+    "currency": "INR",
+    "payment_id": "pay_m3QHEBFHkDlNsf",
+    "status": "lost",
+    "reason": "chargeback_fraud",
+    "created_at": 1775865600,
+    "notes": {
+      "sku": "CREAM-50",
+      "gst_rate": "18"
+    }
+  },
+  {
+    "entity": "dispute",
+    "id": "disp_k21uBxdMhUkHSx",
+    "amount": 344810,
+    "currency": "INR",
+    "payment_id": "pay_AZM7hNpAHD1OaJ",
+    "status": "lost",
+    "reason": "chargeback_fraud",
+    "created_at": 1776643200,
+    "notes": {
+      "sku": "KIT-DELUXE",
+      "gst_rate": "18"
+    }
+  }
+]

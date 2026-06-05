@@ -1,0 +1,41 @@
+[
+  {
+    "entity": "refund",
+    "id": "rfnd_PgKjcDdE00Q7Yh",
+    "amount": 296679,
+    "currency": "INR",
+    "payment_id": "pay_Nwi13hIbqAWoBs",
+    "status": "processed",
+    "created_at": 1775260800,
+    "notes": {
+      "sku": "SERUM-30",
+      "gst_rate": "18"
+    }
+  },
+  {
+    "entity": "refund",
+    "id": "rfnd_7viYIZzMWm6GXT",
+    "amount": 470907,
+    "currency": "INR",
+    "payment_id": "pay_h6vBw2JSHUaeaj",
+    "status": "processed",
+    "created_at": 1775606400,
+    "notes": {
+      "sku": "SERUM-30",
+      "gst_rate": "12"
+    }
+  },
+  {
+    "entity": "refund",
+    "id": "rfnd_0pYtKjluR4SKMS",
+    "amount": 354440,
+    "currency": "INR",
+    "payment_id": "pay_WW0Pa6FPOMWIWL",
+    "status": "processed",
+    "created_at": 1777161600,
+    "notes": {
+      "sku": "CREAM-50",
+      "gst_rate": "18"
+    }
+  }
+]

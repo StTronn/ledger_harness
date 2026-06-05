@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/razorpay/close-agent/internal/agentclient"
 	"github.com/razorpay/close-agent/internal/closer"
 	"github.com/spf13/cobra"
 )
@@ -15,11 +16,17 @@ import (
 // against the hidden truth GL, printing the score plus the classified/skipped
 // counts (SPEC §2 Phase 4, §5, §9).
 //
-// In Phase 4 there is NO agent: events the rule engine cannot classify are
-// FLAGGED and SKIPPED (reported, not crashed). On the clean dtc/2026-05 period
-// every event classifies and the score is the 100% deterministic baseline.
+// The --agent flag selects what happens on a rule miss (SPEC §5, §8, §11
+// Phase 7a): "off" (the default, the Phase-4 flag-and-skip baseline — events the
+// rule engine cannot classify are FLAGGED and SKIPPED, reported, never crashed)
+// or "replay" (consult the §8 classify agent from the committed, deterministic
+// recorded-response fixture — no LLM in CI). On the clean dtc/2026-05 period every
+// event classifies under either mode and the score is 100%. On the hard
+// dtc/2026-04 period --agent off scores PARTIAL (the recorded baseline) and
+// --agent replay RISES to ~100% by classifying the missed payments from the
+// recorded responses (recovered from orders.json, not truth).
 func newCloseCmd(out io.Writer) *cobra.Command {
-	var world, period, root string
+	var world, period, root, agent, liveURL string
 	cmd := &cobra.Command{
 		Use:   "close",
 		Short: "Run the close workflow for a period and print the score",
@@ -34,7 +41,10 @@ func newCloseCmd(out io.Writer) *cobra.Command {
 				}
 				root = wd
 			}
-			res, err := closer.Run(root, world, period)
+			res, err := closer.RunWith(root, world, period, closer.Options{
+				Agent:       agentclient.Mode(agent),
+				LiveBaseURL: liveURL,
+			})
 			if err != nil {
 				return err
 			}
@@ -45,6 +55,10 @@ func newCloseCmd(out io.Writer) *cobra.Command {
 	addWorldPeriodFlags(cmd, &world, &period)
 	cmd.Flags().StringVar(&root, "root", "", "base directory containing worlds/ (defaults to the working directory)")
 	_ = cmd.Flags().MarkHidden("root")
+	cmd.Flags().StringVar(&agent, "agent", "off",
+		"classify-agent mode for rule misses: off (Phase-4 baseline) | replay (committed recorded responses, CI-safe) | live (Flue endpoint, not for CI)")
+	cmd.Flags().StringVar(&liveURL, "agent-url", "", "Flue agent base URL (only used with --agent live)")
+	_ = cmd.Flags().MarkHidden("agent-url")
 	return cmd
 }
 
@@ -53,7 +67,13 @@ func newCloseCmd(out io.Writer) *cobra.Command {
 // score line ("score = N%") is the deterministic baseline the gate checks.
 func printCloseResult(out io.Writer, world, period string, res closer.Result) {
 	fmt.Fprintf(out, "close world %q period %q\n", world, period)
+	fmt.Fprintf(out, "  agent mode: %s\n", res.AgentMode)
 	fmt.Fprintf(out, "  classified: %d events -> %d posted entries\n", res.Classified, res.Ledger.Len())
+	// Report what the agent recovered on the rule misses (Phase 7a). On the agent-
+	// off baseline this is 0; on a replay run it is the count the agent classified.
+	if res.AgentDone > 0 || res.AgentMode != "off" {
+		fmt.Fprintf(out, "  agent classified: %d rule-missed events\n", res.AgentDone)
+	}
 	fmt.Fprintf(out, "  skipped:    %d events\n", len(res.Skipped))
 	for _, s := range res.Skipped {
 		fmt.Fprintf(out, "    - %s %s: %s\n", s.Type, s.EventID, s.Reason)
@@ -95,5 +115,22 @@ func printCloseResult(out io.Writer, world, period string, res closer.Result) {
 	if res.ErrorsPath != "" {
 		fmt.Fprintf(out, "  errors record: %s (schema v%d)\n", res.ErrorsPath, res.Record.SchemaVersion)
 	}
+	// Report the frozen trace artifact path (SPEC §9, §10, §13) when the agent ran
+	// and emitted traces, so `show trace` knows where to look.
+	if res.TracePath != "" {
+		fmt.Fprintf(out, "  agent traces: %s (schema v%d, %d trace(s))\n",
+			res.TracePath, agentTraceSchemaVersion(res.Traces), len(res.Traces))
+	}
 	fmt.Fprintf(out, "score = %d%%\n", sc.Percent())
+}
+
+// agentTraceSchemaVersion returns the frozen trace schema version for reporting.
+// It reads it off the first trace (all traces share TraceSchemaVersion); with no
+// traces it falls back to the package constant so the reported version is always
+// the frozen one.
+func agentTraceSchemaVersion(traces []agentclient.Trace) int {
+	if len(traces) > 0 {
+		return traces[0].SchemaVersion
+	}
+	return agentclient.TraceSchemaVersion
 }

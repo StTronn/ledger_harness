@@ -126,12 +126,15 @@ func (l Layout) TruthDir() string {
 	return filepath.Join(l.PeriodDir(), "truth")
 }
 
-// PaymentsPath, RefundsPath, SettlementsPath, DisputesPath are the four Razorpay
-// fixture files under razorpay/ (SPEC §4.4).
+// PaymentsPath, RefundsPath, SettlementsPath, DisputesPath, OrdersPath are the
+// Razorpay fixture files under razorpay/ (SPEC §4.4, §2). Orders are an
+// agent-input recovery source (the agent "fetches the order" for missing tax
+// metadata), not an accounting event — ingest/normalize never read orders.json.
 func (l Layout) PaymentsPath() string    { return filepath.Join(l.RazorpayDir(), "payments.json") }
 func (l Layout) RefundsPath() string     { return filepath.Join(l.RazorpayDir(), "refunds.json") }
 func (l Layout) SettlementsPath() string { return filepath.Join(l.RazorpayDir(), "settlements.json") }
 func (l Layout) DisputesPath() string    { return filepath.Join(l.RazorpayDir(), "disputes.json") }
+func (l Layout) OrdersPath() string      { return filepath.Join(l.RazorpayDir(), "orders.json") }
 
 // BankFeedPath is worlds/<world>/<period>/bank-feed.json — the independent bank
 // record (agent input).

@@ -89,6 +89,34 @@ func TestReadFixtures(t *testing.T) {
 	}
 }
 
+// TestOrdersNotNormalizedIntoJournal asserts that orders.json — present under
+// razorpay/ as the agent's tax-metadata recovery source (SPEC §2) — is NOT an
+// accounting event: ingest does not read it and normalize never emits an order
+// event. The journal must contain exactly payments+refunds+settlements+disputes,
+// and no event may carry an order_ id (orders are referenced via a payment's
+// links, never normalized as their own event). This is what keeps the committed
+// 2026-05 golden journal byte-identical after orders.json was added.
+func TestOrdersNotNormalizedIntoJournal(t *testing.T) {
+	root := repoRoot(t)
+	raw, events, err := IngestAndNormalize(root, "dtc", "2026-05")
+	if err != nil {
+		t.Fatalf("IngestAndNormalize: %v", err)
+	}
+
+	wantLen := len(raw.Payments) + len(raw.Refunds) + len(raw.Settlements) + len(raw.Disputes)
+	if len(events) != wantLen {
+		t.Errorf("journal has %d events, want %d (orders must not be normalized)", len(events), wantLen)
+	}
+	for _, e := range events {
+		if string(e.Type) == "order" {
+			t.Errorf("journal contains an order event %s; orders are not accounting events", e.ID)
+		}
+		if len(e.ID) >= 6 && e.ID[:6] == "order_" {
+			t.Errorf("journal event %s has an order_ id; orders must not be normalized", e.ID)
+		}
+	}
+}
+
 // TestReadMissingFile asserts a missing expected fixture is a clear, hard error
 // naming the file — never a silently-empty result (a half-seeded period must not
 // close as if complete). It is table-driven over which file is absent.

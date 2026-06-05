@@ -14,11 +14,11 @@ import (
 // settlement's net_deposit must be unchanged — the break is purely that the
 // settlement's batch members no longer account for the (refund-reduced) deposit.
 func TestInjectRefundInBatchKeepsTruth(t *testing.T) {
-	clean, _, cleanGL, _, err := GenerateWith("dtc", "2026-05", Options{})
+	clean, _, cleanGL, _, _, err := GenerateWith("dtc", "2026-05", Options{})
 	if err != nil {
 		t.Fatalf("clean Generate: %v", err)
 	}
-	injFx, _, injGL, inj, err := GenerateWith("dtc", "2026-05", Options{Inject: InjectRefundInBatch})
+	injFx, _, injGL, inj, _, err := GenerateWith("dtc", "2026-05", Options{Inject: InjectRefundInBatch})
 	if err != nil {
 		t.Fatalf("injected Generate: %v", err)
 	}
@@ -74,7 +74,7 @@ func TestInjectRefundInBatchKeepsTruth(t *testing.T) {
 // TestInjectUnknownIsError asserts an unknown injection kind is a clear error,
 // not a silently-clean seed.
 func TestInjectUnknownIsError(t *testing.T) {
-	_, _, _, _, err := GenerateWith("dtc", "2026-05", Options{Inject: Inject("does-not-exist")})
+	_, _, _, _, _, err := GenerateWith("dtc", "2026-05", Options{Inject: Inject("does-not-exist")})
 	if err == nil {
 		t.Fatal("unknown inject kind did not error")
 	}
@@ -88,7 +88,7 @@ func TestCleanGenerateUnaffectedByInjectPlumbing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Generate: %v", err)
 	}
-	b, fb, gb, _, err := GenerateWith("dtc", "2026-05", Options{Inject: InjectNone})
+	b, fb, gb, _, _, err := GenerateWith("dtc", "2026-05", Options{Inject: InjectNone})
 	if err != nil {
 		t.Fatalf("GenerateWith none: %v", err)
 	}

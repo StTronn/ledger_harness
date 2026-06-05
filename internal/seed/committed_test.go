@@ -46,7 +46,8 @@ func TestCommittedCleanFixturesByteIdentical(t *testing.T) {
 	}
 
 	// Agent-input files: compare the stable-marshalled fresh bytes against the
-	// committed file bytes.
+	// committed file bytes. orders.json is included so a fresh clean seed must
+	// reproduce the committed orders byte-for-byte too (SPEC §2).
 	cases := []struct {
 		name string
 		path string
@@ -56,6 +57,7 @@ func TestCommittedCleanFixturesByteIdentical(t *testing.T) {
 		{"refunds", committed.RefundsPath(), fx.Refunds},
 		{"settlements", committed.SettlementsPath(), fx.Settlements},
 		{"disputes", committed.DisputesPath(), fx.Disputes},
+		{"orders", committed.OrdersPath(), fx.Orders},
 		{"bank-feed", committed.BankFeedPath(), feed},
 	}
 	for _, c := range cases {
@@ -86,5 +88,66 @@ func TestCommittedCleanFixturesByteIdentical(t *testing.T) {
 	}
 	if string(freshGL) != string(onDiskGL) {
 		t.Errorf("committed truth/gl.json is no longer byte-identical to a fresh clean seed")
+	}
+}
+
+// TestCommittedHardPeriodByteIdentical is the byte-identity guard for the
+// committed missing-metadata HARD period (worlds/dtc/2026-04, seeded with
+// --ambiguity; SPEC §11 Phase 7). A fresh seed of (dtc, 2026-04) WITH the
+// ambiguity option must reproduce the committed fixtures byte-for-byte — every
+// agent-input file (including the gst_rate-stripped payments.json and the
+// untouched orders.json) and the unperturbed truth GL. If this fails, the hard
+// substrate drifted and any recorded agent responses pinned against it are stale.
+func TestCommittedHardPeriodByteIdentical(t *testing.T) {
+	committed := Layout{Root: repoRoot, World: hardWorld, Period: hardPeriod}
+	if _, err := os.Stat(committed.PaymentsPath()); err != nil {
+		t.Skipf("committed hard fixtures not present (%v); skipping byte-identity guard", err)
+	}
+
+	fx, feed, gl, _, amb, err := GenerateWith(hardWorld, hardPeriod, Options{Ambiguity: true})
+	if err != nil {
+		t.Fatalf("GenerateWith ambiguity: %v", err)
+	}
+	if amb.NumStripped == 0 {
+		t.Fatal("hard period stripped no gst_rate; the committed period is not actually hard")
+	}
+
+	cases := []struct {
+		name string
+		path string
+		v    any
+	}{
+		{"payments", committed.PaymentsPath(), fx.Payments},
+		{"refunds", committed.RefundsPath(), fx.Refunds},
+		{"settlements", committed.SettlementsPath(), fx.Settlements},
+		{"disputes", committed.DisputesPath(), fx.Disputes},
+		{"orders", committed.OrdersPath(), fx.Orders},
+		{"bank-feed", committed.BankFeedPath(), feed},
+	}
+	for _, c := range cases {
+		fresh, err := MarshalStable(c.v)
+		if err != nil {
+			t.Fatalf("marshal fresh %s: %v", c.name, err)
+		}
+		onDisk, err := os.ReadFile(c.path)
+		if err != nil {
+			t.Fatalf("read committed %s: %v", c.name, err)
+		}
+		if string(fresh) != string(onDisk) {
+			t.Errorf("committed hard %s (%s) is no longer byte-identical to a fresh --ambiguity seed",
+				c.name, filepath.Base(c.path))
+		}
+	}
+
+	freshGL, err := MarshalStable(gl)
+	if err != nil {
+		t.Fatalf("marshal fresh hard truth GL: %v", err)
+	}
+	onDiskGL, err := os.ReadFile(committed.TruthGLPath())
+	if err != nil {
+		t.Fatalf("read committed hard truth GL: %v", err)
+	}
+	if string(freshGL) != string(onDiskGL) {
+		t.Errorf("committed hard truth/gl.json is no longer byte-identical to a fresh --ambiguity seed")
 	}
 }

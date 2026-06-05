@@ -16,6 +16,7 @@ import (
 // flags overwrites with byte-identical content.
 func newSeedCmd(out io.Writer) *cobra.Command {
 	var world, period, root, inject string
+	var ambiguity bool
 	cmd := &cobra.Command{
 		Use:   "seed",
 		Short: "Generate a deterministic fixture period (substrate + bank-feed + truth)",
@@ -31,7 +32,10 @@ func newSeedCmd(out io.Writer) *cobra.Command {
 				}
 				root = wd
 			}
-			res, err := seed.SeedWith(root, world, period, seed.Options{Inject: seed.Inject(inject)})
+			res, err := seed.SeedWith(root, world, period, seed.Options{
+				Inject:    seed.Inject(inject),
+				Ambiguity: ambiguity,
+			})
 			if err != nil {
 				return err
 			}
@@ -44,6 +48,8 @@ func newSeedCmd(out io.Writer) *cobra.Command {
 	_ = cmd.Flags().MarkHidden("root")
 	cmd.Flags().StringVar(&inject, "inject", "",
 		fmt.Sprintf("seed a reconciliation break into the fixtures (known: %v); empty = clean", seed.KnownInjects))
+	cmd.Flags().BoolVar(&ambiguity, "ambiguity", false,
+		"strip gst_rate from a deterministic ~15% of payments (the missing-metadata long tail the agent recovers from orders.json)")
 	return cmd
 }
 
@@ -56,10 +62,15 @@ func printSeedResult(out io.Writer, res seed.Result) {
 	fmt.Fprintf(out, "  razorpay/refunds.json     %d refunds\n", res.NumRefunds)
 	fmt.Fprintf(out, "  razorpay/settlements.json %d settlements\n", res.NumSettlements)
 	fmt.Fprintf(out, "  razorpay/disputes.json    %d disputes\n", res.NumDisputes)
+	fmt.Fprintf(out, "  razorpay/orders.json      %d orders (authoritative tax metadata; agent input)\n", res.NumOrders)
 	fmt.Fprintf(out, "  bank-feed.json            %d credits, %d debits\n", res.BankCredits, res.BankDebits)
 	fmt.Fprintf(out, "  truth/gl.json             %d entries (scorer only)\n", res.NumGLEntries)
 	if res.Inject.Kind != seed.InjectNone {
 		fmt.Fprintf(out, "  injected break: %s (settlement %s drops refund %s; truth GL unchanged)\n",
 			res.Inject.Kind, res.Inject.SettlementID, res.Inject.RefundID)
+	}
+	if res.Ambiguity.Enabled {
+		fmt.Fprintf(out, "  ambiguity: stripped gst_rate from %d/%d payments (recoverable from orders.json; truth GL unchanged)\n",
+			res.Ambiguity.NumStripped, res.NumPayments)
 	}
 }

@@ -40,26 +40,32 @@ import (
 // the settlement entry balanced by construction. Disputes touch bank + expense +
 // gst only, never the receivable.
 func Generate(world, period string) (Fixtures, BankFeed, truth.GL, error) {
-	fx, feed, gl, _, err := GenerateWith(world, period, Options{})
+	fx, feed, gl, _, _, err := GenerateWith(world, period, Options{})
 	return fx, feed, gl, err
 }
 
-// GenerateWith is Generate plus the Options knobs (SPEC §5, §7, §12): it
+// GenerateWith is Generate plus the Options knobs (SPEC §1, §2, §5, §7, §12): it
 // generates the clean substrate exactly as Generate does — same seeded RNG
-// stream, so the clean case is byte-identical — and then, if opts requests a
-// break injection, applies it as a post-generation transform to the fixtures
-// only. The hidden truth GL is produced from the clean generation and is NEVER
-// perturbed, so it stays balanced and still describes the correct world
-// (including any refund the injection later hides from a settlement batch). The
-// returned InjectResult records what (if anything) was perturbed.
-func GenerateWith(world, period string, opts Options) (Fixtures, BankFeed, truth.GL, InjectResult, error) {
+// stream, so the clean case is byte-identical — and then applies the requested
+// post-generation transforms to the agent-input FIXTURES only:
+//
+//   - opts.Inject seeds a reconciliation break (see inject.go);
+//   - opts.Ambiguity strips gst_rate from a deterministic ~15% of payments,
+//     producing the missing-metadata long tail the agent fills (see ambiguity.go).
+//
+// The hidden truth GL is produced from the CLEAN generation and is NEVER
+// perturbed, so it stays balanced and still describes the correct world (every
+// sale at its true rate, including any refund a break later hides from a
+// settlement batch). orders.json likewise records each payment's true rate. The
+// returned InjectResult / AmbiguityResult record what (if anything) was perturbed.
+func GenerateWith(world, period string, opts Options) (Fixtures, BankFeed, truth.GL, InjectResult, AmbiguityResult, error) {
 	if err := validateInject(opts.Inject); err != nil {
-		return Fixtures{}, BankFeed{}, truth.GL{}, InjectResult{}, err
+		return Fixtures{}, BankFeed{}, truth.GL{}, InjectResult{}, AmbiguityResult{}, err
 	}
 
 	cal, err := newPeriodCalendar(period)
 	if err != nil {
-		return Fixtures{}, BankFeed{}, truth.GL{}, InjectResult{}, err
+		return Fixtures{}, BankFeed{}, truth.GL{}, InjectResult{}, AmbiguityResult{}, err
 	}
 
 	// The truth GL is built by binding the SAME playbook entry types the rest of
@@ -68,7 +74,7 @@ func GenerateWith(world, period string, opts Options) (Fixtures, BankFeed, truth
 	// pure with respect to (world, period).
 	pb, err := config.DefaultPlaybook()
 	if err != nil {
-		return Fixtures{}, BankFeed{}, truth.GL{}, InjectResult{}, fmt.Errorf("seed: load playbook for truth GL: %w", err)
+		return Fixtures{}, BankFeed{}, truth.GL{}, InjectResult{}, AmbiguityResult{}, fmt.Errorf("seed: load playbook for truth GL: %w", err)
 	}
 
 	g := &generator{
@@ -82,13 +88,14 @@ func GenerateWith(world, period string, opts Options) (Fixtures, BankFeed, truth
 		refunds:     make([]Refund, 0),
 		settlements: make([]Settlement, 0),
 		disputes:    make([]Dispute, 0),
+		orders:      make([]Order, 0),
 		bankCredits: make([]BankFeedEntry, 0),
 		bankDebits:  make([]BankFeedEntry, 0),
 	}
 	g.ids = newIDGen(g.rng)
 
 	if err := g.run(); err != nil {
-		return Fixtures{}, BankFeed{}, truth.GL{}, InjectResult{}, err
+		return Fixtures{}, BankFeed{}, truth.GL{}, InjectResult{}, AmbiguityResult{}, err
 	}
 
 	gl := truth.GL{
@@ -108,15 +115,17 @@ func GenerateWith(world, period string, opts Options) (Fixtures, BankFeed, truth
 		Refunds:     g.refunds,
 		Settlements: g.settlements,
 		Disputes:    g.disputes,
+		Orders:      g.orders,
 	}
 
 	// Defensive by-construction check: the truth GL MUST balance. This is a
 	// generation invariant, so a failure here is a seeder bug, not bad input. The
-	// check runs on the CLEAN truth GL, before any injection — and the injection
-	// never touches truth, so truth stays balanced regardless (a test asserts it).
+	// check runs on the CLEAN truth GL, before any transform — and neither the
+	// break injection nor the ambiguity transform touches truth, so truth stays
+	// balanced regardless (tests assert it).
 	if !gl.IsBalanced() {
 		dr, cr := gl.SumBySide()
-		return Fixtures{}, BankFeed{}, truth.GL{}, InjectResult{},
+		return Fixtures{}, BankFeed{}, truth.GL{}, InjectResult{}, AmbiguityResult{},
 			fmt.Errorf("seed: internal error — generated truth GL does not balance (ΣDr=%s ΣCr=%s)", dr, cr)
 	}
 
@@ -125,9 +134,16 @@ func GenerateWith(world, period string, opts Options) (Fixtures, BankFeed, truth
 	// the break lives in the inconsistency between them and the perturbed fixture.
 	inj, err := applyInject(opts.Inject, &fx)
 	if err != nil {
-		return Fixtures{}, BankFeed{}, truth.GL{}, InjectResult{}, err
+		return Fixtures{}, BankFeed{}, truth.GL{}, InjectResult{}, AmbiguityResult{}, err
 	}
-	return fx, feed, gl, inj, nil
+
+	// Seed the missing-metadata long tail by stripping gst_rate from a
+	// deterministic ~15% of payments (SPEC §1, §2). Drawn from a SEPARATE RNG, so
+	// the clean stream — and truth/gl.json + orders.json — is untouched; the
+	// stripped payments' true rates survive in their orders for the agent to fetch.
+	amb := applyAmbiguity(opts.Ambiguity, world, period, &fx)
+
+	return fx, feed, gl, inj, amb, nil
 }
 
 // generator carries the RNG, calendar, id minter, and the growing output slices
@@ -145,6 +161,7 @@ type generator struct {
 	refunds     []Refund
 	settlements []Settlement
 	disputes    []Dispute
+	orders      []Order
 
 	// Independent bank feed (agent input).
 	bankCredits []BankFeedEntry
@@ -245,6 +262,13 @@ func (g *generator) generateBatch(settleDayOffset int) error {
 		pay := g.makePayment(captureTs)
 		paymentIDs = append(paymentIDs, pay.ID)
 		g.payments = append(g.payments, pay)
+
+		// Emit the authoritative order this payment was captured against (SPEC
+		// §2). It mirrors the payment's TRUE notes (sku + gst_rate) and amount, so
+		// even after the ambiguity transform later strips a payment's gst_rate the
+		// order still holds the true rate the agent recovers from. Built from the
+		// payment value (no new RNG draw) so the clean RNG stream is unchanged.
+		g.orders = append(g.orders, g.makeOrder(pay))
 
 		grossSum = grossSum.Add(pay.Amount)
 		feeSum = feeSum.Add(pay.Fee)

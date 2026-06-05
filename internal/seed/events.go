@@ -41,6 +41,38 @@ func (g *generator) makePayment(ts int64) Payment {
 	}
 }
 
+// orderLeadSeconds is how far BEFORE its payment an order is created. A real
+// order is created when the customer initiates checkout, a short while before
+// the payment is captured; a small fixed lead keeps that ordering without a new
+// RNG draw, so the clean stream is unchanged.
+const orderLeadSeconds = 300
+
+// makeOrder mints the authoritative order a payment was captured against (SPEC
+// §2). It copies the payment's TRUE notes (sku + gst_rate) and gross amount, and
+// reuses the payment's already-minted OrderID — so no extra RNG draw is taken and
+// the order is the legitimate place a downstream consumer recovers the GST rate
+// from when a payment's own notes have been stripped of it. The order is NOT
+// truth: it is another snapshotted agent-input fixture.
+func (g *generator) makeOrder(pay Payment) Order {
+	return Order{
+		Entity:    "order",
+		ID:        pay.OrderID,
+		Amount:    pay.Amount,
+		Currency:  "INR",
+		Status:    "paid",
+		Receipt:   receiptFor(pay.OrderID),
+		CreatedAt: pay.CreatedAt - orderLeadSeconds,
+		Notes:     pay.Notes,
+	}
+}
+
+// receiptFor derives a deterministic merchant receipt number from an order id,
+// reusing the order id's token so no RNG draw is consumed. Real receipts are
+// merchant-assigned opaque strings; a stable "rcpt_"+token mirrors that shape.
+func receiptFor(orderID string) string {
+	return "rcpt_" + orderID[len(prefixOrder):]
+}
+
 // makeRefund mints a full refund of the given payment at the settlement
 // timestamp (refunds in v1 are full-amount and netted in the same batch). The
 // notes (sku + gst_rate) are copied from the payment so a downstream consumer can

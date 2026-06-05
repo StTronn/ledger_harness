@@ -10,12 +10,28 @@
 //	breaks   = reconcile(ledger, raw.settlements, bankFeed)  // internal/reconcile (3 checks)
 //	result   = score(produced, truth)            // internal/score
 //
-// It is the Phase-4/5 orchestrator: hand-written per-event rules book the events,
-// unmatched events are flagged and skipped (never sent anywhere yet, never
-// crashing the run); after all events post, the SPEC §7 three checks reconcile
-// the ledger against the settlements and the independent bank feed and LIST any
-// breaks (Phase 5 — no agent resolves them yet); and the produced ledger is
-// scored against the hidden truth GL to print the deterministic baseline.
+// It is the Phase-4/5/7a orchestrator: hand-written per-event rules book the
+// events; on a rule MISS the §8 classify agent is consulted IF the agent is
+// enabled (Phase 7a, see below), otherwise the miss is flagged and skipped (the
+// documented Phase-4 agent-off baseline). After all events post, the SPEC §7
+// three checks reconcile the ledger against the settlements and the independent
+// bank feed and LIST any breaks (no agent resolves reconcile breaks yet); and the
+// produced ledger is scored against the hidden truth GL.
+//
+// # The classify agent seam (Phase 7a, SPEC §5, §8, §11, §12)
+//
+// On a rule miss, when opts.Agent is replay/live, closer asks the swappable §8
+// agent client (internal/agentclient) to classify the event. The agent returns
+// ONLY {entry_type, params} (never raw debits/credits); closer derives the IK and
+// TxID from the event the SAME way the rule engine does, binds the agent's params
+// through the ledger (balance-or-reject), and posts the result — so an
+// agent-classified entry is indistinguishable from a rule-classified one to the
+// rest of the pipeline. Every agent consultation emits a FROZEN trace (SPEC §9,
+// §13), and Run writes the traces to runs/<world>-<period>/trace.json so
+// `show trace` can print them. In CI the client is REPLAY (deterministic, no
+// LLM), so a hard period that scores PARTIAL with rules only RISES to ~100% with
+// agent replay, byte-deterministically. With opts.Agent off, closer is exactly
+// the Phase-4 flag-and-skip baseline.
 //
 // # Determinism (SPEC §5, §12)
 //
@@ -37,6 +53,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/razorpay/close-agent/internal/agentclient"
 	"github.com/razorpay/close-agent/internal/classify"
 	"github.com/razorpay/close-agent/internal/config"
 	"github.com/razorpay/close-agent/internal/ingest"
@@ -45,10 +62,11 @@ import (
 	"github.com/razorpay/close-agent/internal/score"
 )
 
-// Skip records one event the rule engine could not classify: the source event id
-// and type, plus the human-readable reason. In Phase 4 a skip is reported (not
-// crashed and not silently dropped); in Phase 7 these are exactly the events
-// handed to the agent. Slice order follows the event journal order.
+// Skip records one event that ended up UNbooked: the source event id and type,
+// plus the human-readable reason. A skip happens when the rule engine missed AND
+// either the agent is off (the Phase-4 baseline) or the agent ESCALATED the event
+// as {unclassifiable, reason} (Phase 7a). It is reported, never crashed and never
+// silently dropped. Slice order follows the event journal order.
 type Skip struct {
 	EventID string
 	Type    string
@@ -66,7 +84,11 @@ type Skip struct {
 type Result struct {
 	Ledger     *ledger.Ledger
 	Produced   []score.Produced
-	Classified int
+	Classified int                 // events booked by the rule engine
+	AgentMode  agentclient.Mode    // which agent mode this run used (off/replay/live)
+	AgentDone  int                 // rule-missed events the agent classified and booked
+	Traces     []agentclient.Trace // FROZEN agent traces, one per agent consultation (SPEC §9, §13)
+	TracePath  string              // path the trace artifact was written to (empty if none)
 	Skipped    []Skip
 	Breaks     []reconcile.Break // SPEC §7 reconciliation breaks (Phase 5; empty = clean)
 	Score      score.Result
@@ -74,20 +96,39 @@ type Result struct {
 	ErrorsPath string          // path the errors.json artifact was written to
 }
 
+// Options controls a close run (SPEC §5, §11 Phase 7a). Agent selects the
+// classify-agent mode for rule misses: ModeOff (the Phase-4 flag-and-skip
+// baseline — the default), ModeReplay (the CI-safe recorded-response client), or
+// ModeLive (post to a Flue endpoint; not exercised in CI). LiveBaseURL is the
+// Flue agent host used only in ModeLive. The zero value is the agent-off baseline.
+type Options struct {
+	Agent       agentclient.Mode
+	LiveBaseURL string
+}
+
 // receivableAccount is the chart path whose period-end balance must clear to ~0
 // (SPEC §7 check #3, §4.1). It is named here, not read from truth, so reconcile
 // stays a pure function over the posted ledger.
 const receivableAccount = "assets/razorpay-settlement-receivable"
 
-// Run executes the close pipeline for (world, period) under root and scores it
-// against the period's truth GL. root is the base directory containing worlds/.
+// Run executes the close pipeline for (world, period) under root with the agent
+// OFF — the documented Phase-4 flag-and-skip baseline — and scores it against the
+// period's truth GL. It is a thin wrapper over RunWith for the common case and
+// keeps the existing call sites unchanged.
+func Run(root, world, period string) (Result, error) {
+	return RunWith(root, world, period, Options{})
+}
+
+// RunWith executes the close pipeline for (world, period) under root with the
+// given Options and scores it against the period's truth GL. root is the base
+// directory containing worlds/.
 //
 // It returns an error only for hard failures (a fixture missing, a malformed
-// truth GL, an entry that fails to bind or post — all of which mean something is
-// wrong with the substrate or the playbook, not an ordinary unmatched event).
-// An unmatched event is NOT an error: it is recorded as a Skip and the run
-// continues, exactly as Phase 4 requires.
-func Run(root, world, period string) (Result, error) {
+// truth GL, an entry that fails to bind or post, or — in an enabled agent mode —
+// a malformed recorded-response fixture). An unmatched event is NOT an error: it
+// is classified by the agent if enabled, or recorded as a Skip otherwise, and the
+// run continues. An event the agent ESCALATES is likewise a Skip, never an error.
+func RunWith(root, world, period string, opts Options) (Result, error) {
 	pb, err := config.DefaultPlaybook()
 	if err != nil {
 		return Result{}, fmt.Errorf("closer: load playbook: %w", err)
@@ -100,14 +141,33 @@ func Run(root, world, period string) (Result, error) {
 		return Result{}, err
 	}
 
-	res := Result{Ledger: lg}
+	// Resolve the §8 classify agent for the requested mode. The mode is validated
+	// here, but the recorded-response fixture is loaded LAZILY on the first rule
+	// miss (so a clean period needs no fixture in replay mode); a missing/malformed
+	// fixture is then a hard error. The client NEVER reads truth.
+	agent, mode, err := newAgent(root, world, period, opts)
+	if err != nil {
+		return Result{}, err
+	}
+
+	res := Result{Ledger: lg, AgentMode: mode}
 	for _, ev := range events {
 		c, ok, reason := classify.Classify(ev)
-		if !ok {
-			res.Skipped = append(res.Skipped, Skip{
-				EventID: ev.ID, Type: string(ev.Type), Reason: reason,
-			})
-			continue
+		if ok {
+			res.Classified++
+		} else {
+			// Rule miss. Consult the agent if enabled; otherwise flag-and-skip.
+			ac, agentReason, handled, err := classifyWithAgent(agent, ev, &res)
+			if err != nil {
+				return Result{}, err
+			}
+			if !handled {
+				res.Skipped = append(res.Skipped, Skip{
+					EventID: ev.ID, Type: string(ev.Type), Reason: skipReason(reason, agentReason),
+				})
+				continue
+			}
+			c = ac
 		}
 		entry, err := ledger.Bind(tmpls, c.EntryType, c.IK, c.Params)
 		if err != nil {
@@ -119,8 +179,18 @@ func Run(root, world, period string) (Result, error) {
 		if err != nil {
 			return Result{}, fmt.Errorf("closer: post %s for event %s: %w", c.EntryType, ev.ID, err)
 		}
-		res.Classified++
 		res.Produced = append(res.Produced, producedFrom(ev.ID, posted))
+	}
+
+	// Persist the agent traces (if any) to runs/<world>-<period>/trace.json so the
+	// `show trace` command can print them (SPEC §9, §10). The deterministic agent-
+	// off baseline produces none and writes no file.
+	if len(res.Traces) > 0 {
+		tp, err := writeTraces(root, world, period, res.Traces)
+		if err != nil {
+			return Result{}, err
+		}
+		res.TracePath = tp
 	}
 
 	// Reconcile (SPEC §5, §7): after every event has posted, run the three checks

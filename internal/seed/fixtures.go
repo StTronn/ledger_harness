@@ -38,6 +38,32 @@ type Payment struct {
 	Notes     Notes       `json:"notes"`      // sku + gst_rate
 }
 
+// Order is a Razorpay-shaped order (id prefix order_): the merchant-created
+// order a payment is captured against. Unlike a payment's free-form notes (which
+// a real integration may stamp inconsistently or omit), the order is the
+// AUTHORITATIVE record of what was sold and at what tax rate — it carries the
+// SKU, the GST rate, and the order amount the customer was charged (SPEC §1, §2:
+// when a payment is missing tax metadata, the agent "fetches the order" to
+// recover it). It is therefore the legitimate, snapshotted recovery source the
+// classify-fallback agent reads on a rule miss; it is NOT ground truth (the
+// scorer-only truth/gl.json), just another agent-input fixture under razorpay/.
+//
+// One order is emitted per payment, and Payment.OrderID references Order.ID. The
+// order's GSTRate/SKU are captured at the payment's TRUE values at generation
+// time, BEFORE any ambiguity transform strips a payment's notes — so even after
+// the gst_rate is removed from a payment's notes, the order still holds the true
+// rate (which is what makes recovery-from-order possible without reading truth).
+type Order struct {
+	Entity    string      `json:"entity"`     // always "order"
+	ID        string      `json:"id"`         // order_XXXXXXXXXXXXXX
+	Amount    money.Money `json:"amount"`     // order amount, paise (== payment gross, GST-inclusive)
+	Currency  string      `json:"currency"`   // "INR"
+	Status    string      `json:"status"`     // "paid"
+	Receipt   string      `json:"receipt"`    // merchant receipt no. (deterministic)
+	CreatedAt int64       `json:"created_at"` // Unix seconds (order precedes its payment)
+	Notes     Notes       `json:"notes"`      // AUTHORITATIVE sku + gst_rate
+}
+
 // Refund is a Razorpay-shaped refund (id prefix rfnd_) against a captured
 // payment. amount is the gross refunded to the customer in paise; PaymentID
 // links it back to the original payment. Refunds reduce a later settlement batch
@@ -121,12 +147,16 @@ type BankFeedEntry struct {
 	Ref    string      `json:"ref"`    // UTR (credit) or dispute id (debit) to match on
 }
 
-// Fixtures bundles the four Razorpay-shaped slices the seeder emits to
-// razorpay/. It is a convenience for passing the agent-input substrate around as
-// one value; each slice is written to its own file (SPEC §4.4).
+// Fixtures bundles the Razorpay-shaped slices the seeder emits to razorpay/. It
+// is a convenience for passing the agent-input substrate around as one value;
+// each slice is written to its own file (SPEC §4.4). Orders are an agent-input
+// recovery source (SPEC §2) but are NOT accounting events: ingest/normalize do
+// not read them into the event journal, so adding orders.json never changes the
+// normalized journal or the books.
 type Fixtures struct {
 	Payments    []Payment
 	Refunds     []Refund
 	Settlements []Settlement
 	Disputes    []Dispute
+	Orders      []Order
 }
