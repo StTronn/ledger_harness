@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "world": "dtc",
+  "period": "2026-03",
+  "responses": [
+    {
+      "event_id": "rfnd_2q9UwRRE21Gf2r",
+      "tools_used": [
+        "orders.fetch"
+      ],
+      "unclassifiable": true,
+      "reason": "rule miss \"missing gst_rate\" on refund event is not a payment the classify agent recovers in v1"
+    }
+  ]
+}

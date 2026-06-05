@@ -1,0 +1,44 @@
+[
+  {
+    "entity": "dispute",
+    "id": "disp_XtpUZxODzGtwfn",
+    "amount": 350704,
+    "currency": "INR",
+    "payment_id": "pay_X7CHVdJLlCZCxV",
+    "status": "lost",
+    "reason": "chargeback_fraud",
+    "created_at": 1773705600,
+    "notes": {
+      "sku": "KIT-DELUXE",
+      "gst_rate": "5"
+    }
+  },
+  {
+    "entity": "dispute",
+    "id": "disp_PPh4WVpFa3YuI5",
+    "amount": 95176,
+    "currency": "INR",
+    "payment_id": "pay_ap9qGpscpMHNLT",
+    "status": "lost",
+    "reason": "chargeback_fraud",
+    "created_at": 1773705600,
+    "notes": {
+      "sku": "MASK-5PK",
+      "gst_rate": "5"
+    }
+  },
+  {
+    "entity": "dispute",
+    "id": "disp_QHODmNEkLAfjy8",
+    "amount": 324762,
+    "currency": "INR",
+    "payment_id": "pay_K2YcxX7lSzr0jB",
+    "status": "lost",
+    "reason": "chargeback_fraud",
+    "created_at": 1774483200,
+    "notes": {
+      "sku": "KIT-DELUXE",
+      "gst_rate": "12"
+    }
+  }
+]

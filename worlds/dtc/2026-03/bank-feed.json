@@ -1,0 +1,53 @@
+{
+  "account": "XXXXXXXXDTC",
+  "period": "2026-03",
+  "credits": [
+    {
+      "amount": 1377669,
+      "date": "2026-03-05",
+      "ref": "UTR7cUMy0YEFbweo4"
+    },
+    {
+      "amount": 1897951,
+      "date": "2026-03-08",
+      "ref": "UTRdAucqgDBfKPA3r"
+    },
+    {
+      "amount": 952262,
+      "date": "2026-03-14",
+      "ref": "UTRMAydKrgohLKmSv"
+    },
+    {
+      "amount": 529026,
+      "date": "2026-03-18",
+      "ref": "UTRf8ZtZfgB4VEJI5"
+    },
+    {
+      "amount": 1003276,
+      "date": "2026-03-23",
+      "ref": "UTRalKiQc8PYUtJXC"
+    },
+    {
+      "amount": 525496,
+      "date": "2026-03-27",
+      "ref": "UTRQUOWyYeO7IdSFi"
+    }
+  ],
+  "debits": [
+    {
+      "amount": 350704,
+      "date": "2026-03-17",
+      "ref": "disp_XtpUZxODzGtwfn"
+    },
+    {
+      "amount": 95176,
+      "date": "2026-03-17",
+      "ref": "disp_PPh4WVpFa3YuI5"
+    },
+    {
+      "amount": 324762,
+      "date": "2026-03-26",
+      "ref": "disp_QHODmNEkLAfjy8"
+    }
+  ]
+}

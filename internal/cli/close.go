@@ -84,9 +84,14 @@ func printCloseResult(out io.Writer, world, period string, res closer.Result) {
 	if sc.TrialBalanceMatches {
 		tb = "yes"
 	}
-	// Reconciliation (SPEC §7): list the breaks the three checks detected. On the
-	// clean period this is "0 breaks (reconciled)". In Phase 5 no agent resolves
-	// them; each break carries the context a Phase-8 investigate agent will need.
+	// Reconciliation (SPEC §7, §8): list the breaks left UNRESOLVED after the
+	// investigate agent ran. On the clean period this is "0 breaks (reconciled)".
+	// When the §8 investigate agent resolved breaks by posting (Phase 8), report
+	// how many it fixed; breaks it escalated (or any break with the agent off) are
+	// listed as remaining, never guessed.
+	if res.InvestigateDone > 0 {
+		fmt.Fprintf(out, "  investigate: resolved %d break(s) by posting\n", res.InvestigateDone)
+	}
 	if len(res.Breaks) == 0 {
 		fmt.Fprintf(out, "  reconcile: 0 breaks (reconciled)\n")
 	} else {
@@ -100,6 +105,9 @@ func printCloseResult(out io.Writer, world, period string, res closer.Result) {
 				b.Check, b.Kind, where, b.Expected, b.Actual, b.CandidateEventIDs)
 			fmt.Fprintf(out, "        %s\n", b.Detail)
 		}
+	}
+	for _, e := range res.Escalations {
+		fmt.Fprintf(out, "    escalated [%s]: %s\n", e.Kind, e.Reason)
 	}
 
 	fmt.Fprintf(out, "  trial balance matches truth: %s\n", tb)
@@ -120,6 +128,10 @@ func printCloseResult(out io.Writer, world, period string, res closer.Result) {
 	if res.TracePath != "" {
 		fmt.Fprintf(out, "  agent traces: %s (schema v%d, %d trace(s))\n",
 			res.TracePath, agentTraceSchemaVersion(res.Traces), len(res.Traces))
+	}
+	if res.InvestigateTracePath != "" {
+		fmt.Fprintf(out, "  investigate traces: %s (schema v%d, %d trace(s))\n",
+			res.InvestigateTracePath, agentclient.InvestigateTraceSchemaVersion, len(res.InvestigateTraces))
 	}
 	fmt.Fprintf(out, "score = %d%%\n", sc.Percent())
 }

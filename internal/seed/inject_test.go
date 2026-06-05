@@ -71,6 +71,87 @@ func TestInjectRefundInBatchKeepsTruth(t *testing.T) {
 	}
 }
 
+// TestInjectUnbookedRefundKeepsTruth is the Phase-8 seeded-break invariant (SPEC
+// §7 check #3, §8, §12): the unbooked-refund injection STRIPS the gst_rate from a
+// netted refund and perturbs NOTHING else. The hidden truth GL must still balance
+// AND still book the refund's refund_reversal at its true rate; the refund must
+// remain in refunds.json (so its id/amount/payment_id stay recoverable) with only
+// its gst_rate cleared; its amount, its batch membership, and the settlement's
+// net_deposit must all be unchanged — so check #2 (batch-sum) stays green and the
+// break is purely that the refund goes UNBOOKED (a check #3 receivable residual).
+func TestInjectUnbookedRefundKeepsTruth(t *testing.T) {
+	clean, _, cleanGL, _, _, err := GenerateWith("dtc", "2026-05", Options{})
+	if err != nil {
+		t.Fatalf("clean Generate: %v", err)
+	}
+	injFx, _, injGL, inj, _, err := GenerateWith("dtc", "2026-05", Options{Inject: InjectUnbookedRefund})
+	if err != nil {
+		t.Fatalf("injected Generate: %v", err)
+	}
+
+	if inj.Kind != InjectUnbookedRefund || inj.SettlementID == "" || inj.RefundID == "" {
+		t.Fatalf("injection result not populated: %+v", inj)
+	}
+
+	// 1) Truth GL is byte-equal to the clean GL and still balances and still books
+	// the unbooked refund (the correct resolution the agent must reproduce).
+	cb, _ := MarshalStable(cleanGL)
+	ib, _ := MarshalStable(injGL)
+	if string(cb) != string(ib) {
+		t.Errorf("injection changed the truth GL; it must be left intact")
+	}
+	if !injGL.IsBalanced() {
+		dr, cr := injGL.SumBySide()
+		t.Errorf("injected truth GL does not balance: Dr=%s Cr=%s", dr, cr)
+	}
+	if !truthHasRefundEntry(injGL.Entries, inj.RefundID) {
+		t.Errorf("truth GL is missing the unbooked refund %s", inj.RefundID)
+	}
+
+	// 2) The refund is still in refunds.json, with ONLY its gst_rate stripped; its
+	// amount (and thus its membership economics) are unchanged from clean.
+	cleanRef := refundByID(clean.Refunds, inj.RefundID)
+	injRef := refundByID(injFx.Refunds, inj.RefundID)
+	if injRef == nil {
+		t.Fatalf("refunds.json no longer contains the unbooked refund %s", inj.RefundID)
+	}
+	if injRef.Notes.GSTRate != "" {
+		t.Errorf("refund %s gst_rate = %q, want stripped (empty)", inj.RefundID, injRef.Notes.GSTRate)
+	}
+	if cleanRef == nil || injRef.Amount != cleanRef.Amount {
+		t.Errorf("refund %s amount changed by injection", inj.RefundID)
+	}
+	if injRef.Notes.SKU == "" || injRef.Notes.SKU != cleanRef.Notes.SKU {
+		t.Errorf("refund %s sku changed/cleared by injection (only gst_rate should be stripped)", inj.RefundID)
+	}
+
+	// 3) Every settlement is byte-identical to clean: net_deposit AND refund_ids are
+	// untouched (the refund stays in its batch), so check #2 cannot fire.
+	cleanByID := settlementsByID(clean.Settlements)
+	for _, s := range injFx.Settlements {
+		cs := cleanByID[s.ID]
+		if s.Amount != cs.Amount {
+			t.Errorf("settlement %s net_deposit changed by injection: %s -> %s", s.ID, cs.Amount, s.Amount)
+		}
+		if !equalSlices(s.RefundIDs, cs.RefundIDs) {
+			t.Errorf("settlement %s refund_ids changed by injection: %v -> %v", s.ID, cs.RefundIDs, s.RefundIDs)
+		}
+	}
+	if !sliceContains(settlementsByID(injFx.Settlements)[inj.SettlementID].RefundIDs, inj.RefundID) {
+		t.Errorf("settlement %s no longer lists the unbooked refund %s in its batch", inj.SettlementID, inj.RefundID)
+	}
+}
+
+// refundByID returns a pointer to the refund with the given id, or nil.
+func refundByID(refunds []Refund, id string) *Refund {
+	for i := range refunds {
+		if refunds[i].ID == id {
+			return &refunds[i]
+		}
+	}
+	return nil
+}
+
 // TestInjectUnknownIsError asserts an unknown injection kind is a clear error,
 // not a silently-clean seed.
 func TestInjectUnknownIsError(t *testing.T) {

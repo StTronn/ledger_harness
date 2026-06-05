@@ -1,0 +1,28 @@
+[
+  {
+    "entity": "refund",
+    "id": "rfnd_2q9UwRRE21Gf2r",
+    "amount": 248591,
+    "currency": "INR",
+    "payment_id": "pay_XvjVkqEqsxAS83",
+    "status": "processed",
+    "created_at": 1773792000,
+    "notes": {
+      "sku": "KIT-DELUXE",
+      "gst_rate": ""
+    }
+  },
+  {
+    "entity": "refund",
+    "id": "rfnd_JiMdFAmjDQH2xL",
+    "amount": 73269,
+    "currency": "INR",
+    "payment_id": "pay_hBJHAtkCKlNV7T",
+    "status": "processed",
+    "created_at": 1774224000,
+    "notes": {
+      "sku": "CREAM-50",
+      "gst_rate": "5"
+    }
+  }
+]

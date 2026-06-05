@@ -41,6 +41,9 @@ type agentProvider struct {
 
 	client agentclient.Client // built on first use
 	built  bool
+
+	invClient agentclient.InvestigateClient // §8 investigate client, built on first use
+	invBuilt  bool
 }
 
 // newAgent validates opts.Agent and returns the provider and resolved mode. It
@@ -93,6 +96,37 @@ func (p *agentProvider) clientFor() (agentclient.Client, error) {
 	}
 	p.client = c
 	p.built = true
+	return c, nil
+}
+
+// investigateClientFor lazily builds and caches the concrete §8 INVESTIGATE client
+// for the provider's mode (Phase 8), parallel to clientFor. In replay mode it loads
+// the committed investigate.recorded.json (a missing/malformed fixture is a hard
+// error — a replay run with real breaks must have recorded resolutions to replay);
+// in live mode it builds the HTTP client against the configured Flue URL. It is
+// only reached when reconcile actually found a break, so a fully-reconciling period
+// never requires an investigate fixture.
+func (p *agentProvider) investigateClientFor() (agentclient.InvestigateClient, error) {
+	if p.invBuilt {
+		return p.invClient, nil
+	}
+	var (
+		c   agentclient.InvestigateClient
+		err error
+	)
+	switch p.mode {
+	case agentclient.ModeReplay:
+		c, err = agentclient.NewReplayInvestigateClientFromPath(agentclient.InvestigateRecordedPath(p.root, p.world, p.period))
+		if err != nil {
+			return nil, fmt.Errorf("closer: build replay investigate agent: %w", err)
+		}
+	case agentclient.ModeLive:
+		c = agentclient.NewLiveInvestigateClient(p.liveURL, p.world, p.period, "", nil)
+	default:
+		return nil, fmt.Errorf("closer: agent mode %q has no investigate client", p.mode)
+	}
+	p.invClient = c
+	p.invBuilt = true
 	return c, nil
 }
 

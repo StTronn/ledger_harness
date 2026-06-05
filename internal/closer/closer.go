@@ -90,10 +90,30 @@ type Result struct {
 	Traces     []agentclient.Trace // FROZEN agent traces, one per agent consultation (SPEC §9, §13)
 	TracePath  string              // path the trace artifact was written to (empty if none)
 	Skipped    []Skip
-	Breaks     []reconcile.Break // SPEC §7 reconciliation breaks (Phase 5; empty = clean)
-	Score      score.Result
-	Record     score.RunRecord // FROZEN errors.json record (SPEC §9, §13)
-	ErrorsPath string          // path the errors.json artifact was written to
+	Breaks     []reconcile.Break // SPEC §7 breaks left UNRESOLVED after investigate (empty = fully reconciled)
+	// Investigate seam (Phase 8, SPEC §7, §8). InvestigateDone is the number of
+	// breaks the §8 investigate agent resolved by posting; Escalations lists the
+	// breaks it (or the agent-off baseline) left for a human, with reasons;
+	// InvestigateTraces is the FROZEN trace of every investigate consultation and
+	// InvestigateTracePath where they were written.
+	InvestigateDone      int
+	Escalations          []Escalation
+	InvestigateTraces    []agentclient.InvestigateTrace
+	InvestigateTracePath string
+	Score                score.Result
+	Record               score.RunRecord // FROZEN errors.json record (SPEC §9, §13)
+	ErrorsPath           string          // path the errors.json artifact was written to
+}
+
+// Escalation records one reconcile break that was NOT resolved by a posting: the
+// agent escalated it ({escalate, reason}) or the agent is off (the break is listed
+// as-is). It carries the break's stable key and kind plus the human-readable
+// reason, so the operator can tell an escalated break from a resolved one. The
+// break itself remains in Result.Breaks.
+type Escalation struct {
+	BreakKey string
+	Kind     string
+	Reason   string
 }
 
 // Options controls a close run (SPEC §5, §11 Phase 7a). Agent selects the
@@ -150,8 +170,16 @@ func RunWith(root, world, period string, opts Options) (Result, error) {
 		return Result{}, err
 	}
 
+	// eventByID lets the investigate stage recover an event's timestamp and build
+	// candidate summaries; skippedEvents are the UNBOOKED events (rule+agent miss)
+	// the investigate agent treats as the suspects for a "settled-but-not-booked"
+	// residual break (SPEC §7 check #3, §8).
+	eventByID := make(map[string]ingest.NormalizedEvent, len(events))
+	var skippedEvents []ingest.NormalizedEvent
+
 	res := Result{Ledger: lg, AgentMode: mode}
 	for _, ev := range events {
+		eventByID[ev.ID] = ev
 		c, ok, reason := classify.Classify(ev)
 		if ok {
 			res.Classified++
@@ -165,6 +193,7 @@ func RunWith(root, world, period string, opts Options) (Result, error) {
 				res.Skipped = append(res.Skipped, Skip{
 					EventID: ev.ID, Type: string(ev.Type), Reason: skipReason(reason, agentReason),
 				})
+				skippedEvents = append(skippedEvents, ev)
 				continue
 			}
 			c = ac
@@ -203,15 +232,41 @@ func RunWith(root, world, period string, opts Options) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
-	res.Breaks = reconcile.Reconcile(reconcile.Input{
-		Settlements:       raw.Settlements,
-		Payments:          raw.Payments,
-		Refunds:           raw.Refunds,
-		BankFeed:          raw.BankFeed,
-		ReceivableBalance: lg.AccountBalance(receivableAccount).Balance,
-		PeriodEnd:         periodEnd,
-		DateToleranceDays: settlementDateToleranceDays,
-	})
+	reconInput := func() reconcile.Input {
+		return reconcile.Input{
+			Settlements:       raw.Settlements,
+			Payments:          raw.Payments,
+			Refunds:           raw.Refunds,
+			BankFeed:          raw.BankFeed,
+			ReceivableBalance: lg.AccountBalance(receivableAccount).Balance,
+			PeriodEnd:         periodEnd,
+			DateToleranceDays: settlementDateToleranceDays,
+		}
+	}
+	res.Breaks = reconcile.Reconcile(reconInput())
+
+	// Investigate (SPEC §5, §7, §8, Phase 8): when the agent is enabled, hand each
+	// break to the §8 investigate agent. A resolution's postings are bound+posted
+	// through the ledger (balance-or-reject) exactly like a classification, then the
+	// ledger is RE-RECONCILED so a genuinely-fixed break clears; a break the agent
+	// escalates (or any break when the agent is off) is LEFT listed and recorded as
+	// an Escalation — never guessed. Every consultation emits a FROZEN trace.
+	if agent.enabled() && len(res.Breaks) > 0 {
+		candidates := summarizeEvents(skippedEvents)
+		if err := investigateBreaks(agent, tmpls, lg, eventByID, candidates, reconInput, &res); err != nil {
+			return Result{}, err
+		}
+	}
+
+	// Persist the investigate traces (if any) to runs/<world>-<period>/investigate-trace.json
+	// so `show trace <path>` can print the investigate trajectory (SPEC §9, §10).
+	if len(res.InvestigateTraces) > 0 {
+		ip, err := writeInvestigateTraces(root, world, period, res.InvestigateTraces)
+		if err != nil {
+			return Result{}, err
+		}
+		res.InvestigateTracePath = ip
+	}
 
 	// Scoring needs the period's truth GL. Only the scorer may read truth/gl.json
 	// (SPEC §4.4), so closer hands the produced entries to score.RunScoreRecord,

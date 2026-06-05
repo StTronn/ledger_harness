@@ -1,0 +1,949 @@
+{
+  "version": 1,
+  "world": "dtc",
+  "period": "2026-03",
+  "entries": [
+    {
+      "id": "gl_0001",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_GJxVf3ftynHM1D",
+      "tx_id": "pay_GJxVf3ftynHM1D",
+      "ts": 1772496000,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 257581
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 229983
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 27598
+        }
+      ]
+    },
+    {
+      "id": "gl_0002",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_diUvXLQejDgrFx",
+      "tx_id": "pay_diUvXLQejDgrFx",
+      "ts": 1772496000,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 129170
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 123019
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 6151
+        }
+      ]
+    },
+    {
+      "id": "gl_0003",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_QTPEjWZDoBv7sf",
+      "tx_id": "pay_QTPEjWZDoBv7sf",
+      "ts": 1772496000,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 488720
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 465447
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 23273
+        }
+      ]
+    },
+    {
+      "id": "gl_0004",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_XuJDug75ilg35G",
+      "tx_id": "pay_XuJDug75ilg35G",
+      "ts": 1772496000,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 211153
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 178943
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 32210
+        }
+      ]
+    },
+    {
+      "id": "gl_0005",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_hlPye85ot4yQMg",
+      "tx_id": "pay_hlPye85ot4yQMg",
+      "ts": 1772496000,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 206125
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 174682
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 31443
+        }
+      ]
+    },
+    {
+      "id": "gl_0006",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_OdQcIEVl2WyDj0",
+      "tx_id": "pay_OdQcIEVl2WyDj0",
+      "ts": 1772496000,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 118213
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 112583
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 5630
+        }
+      ]
+    },
+    {
+      "id": "gl_0007",
+      "entry_type": "razorpay_settlement",
+      "event_id": "setl_7cUMy0YEFbweo4",
+      "tx_id": "UTR7cUMy0YEFbweo4",
+      "ts": 1772668800,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/bank",
+          "amount": 1377669
+        },
+        {
+          "side": "Dr",
+          "account": "expense/processor-fees",
+          "amount": 28217
+        },
+        {
+          "side": "Dr",
+          "account": "expense/gst-input",
+          "amount": 5076
+        },
+        {
+          "side": "Cr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 1410962
+        }
+      ]
+    },
+    {
+      "id": "gl_0008",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_F4c66U42YAiMTV",
+      "tx_id": "pay_F4c66U42YAiMTV",
+      "ts": 1772755200,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 175287
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 148548
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 26739
+        }
+      ]
+    },
+    {
+      "id": "gl_0009",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_bca6Wcjwd9E1mH",
+      "tx_id": "pay_bca6Wcjwd9E1mH",
+      "ts": 1772755200,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 203012
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 193344
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 9668
+        }
+      ]
+    },
+    {
+      "id": "gl_0010",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_por4Wp1geQ07Wc",
+      "tx_id": "pay_por4Wp1geQ07Wc",
+      "ts": 1772755200,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 232321
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 207429
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 24892
+        }
+      ]
+    },
+    {
+      "id": "gl_0011",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_0Cat8oPFeJ4NDk",
+      "tx_id": "pay_0Cat8oPFeJ4NDk",
+      "ts": 1772755200,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 255057
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 242911
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 12146
+        }
+      ]
+    },
+    {
+      "id": "gl_0012",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_k3CEBuiHw1AWD1",
+      "tx_id": "pay_k3CEBuiHw1AWD1",
+      "ts": 1772755200,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 287971
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 274258
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 13713
+        }
+      ]
+    },
+    {
+      "id": "gl_0013",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_hYofmhCLFXiwCV",
+      "tx_id": "pay_hYofmhCLFXiwCV",
+      "ts": 1772755200,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 328659
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 278524
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 50135
+        }
+      ]
+    },
+    {
+      "id": "gl_0014",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_g89QGQyGfsQFW3",
+      "tx_id": "pay_g89QGQyGfsQFW3",
+      "ts": 1772755200,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 461512
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 412064
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 49448
+        }
+      ]
+    },
+    {
+      "id": "gl_0015",
+      "entry_type": "razorpay_settlement",
+      "event_id": "setl_dAucqgDBfKPA3r",
+      "tx_id": "UTRdAucqgDBfKPA3r",
+      "ts": 1772928000,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/bank",
+          "amount": 1897951
+        },
+        {
+          "side": "Dr",
+          "account": "expense/processor-fees",
+          "amount": 38874
+        },
+        {
+          "side": "Dr",
+          "account": "expense/gst-input",
+          "amount": 6994
+        },
+        {
+          "side": "Cr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 1943819
+        }
+      ]
+    },
+    {
+      "id": "gl_0016",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_OpSGYgMN2fFfUZ",
+      "tx_id": "pay_OpSGYgMN2fFfUZ",
+      "ts": 1773273600,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 375480
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 357600
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 17880
+        }
+      ]
+    },
+    {
+      "id": "gl_0017",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_X7CHVdJLlCZCxV",
+      "tx_id": "pay_X7CHVdJLlCZCxV",
+      "ts": 1773273600,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 350704
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 334003
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 16701
+        }
+      ]
+    },
+    {
+      "id": "gl_0018",
+      "entry_type": "chargeback_loss",
+      "event_id": "disp_XtpUZxODzGtwfn",
+      "tx_id": "disp_XtpUZxODzGtwfn",
+      "ts": 1773705600,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "expense/chargeback-loss",
+          "amount": 334003
+        },
+        {
+          "side": "Dr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 16701
+        },
+        {
+          "side": "Cr",
+          "account": "assets/bank",
+          "amount": 350704
+        }
+      ]
+    },
+    {
+      "id": "gl_0019",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_MntG9uWr9qZgCi",
+      "tx_id": "pay_MntG9uWr9qZgCi",
+      "ts": 1773273600,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 153915
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 130436
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 23479
+        }
+      ]
+    },
+    {
+      "id": "gl_0020",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_ap9qGpscpMHNLT",
+      "tx_id": "pay_ap9qGpscpMHNLT",
+      "ts": 1773273600,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 95176
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 90643
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 4533
+        }
+      ]
+    },
+    {
+      "id": "gl_0021",
+      "entry_type": "chargeback_loss",
+      "event_id": "disp_PPh4WVpFa3YuI5",
+      "tx_id": "disp_PPh4WVpFa3YuI5",
+      "ts": 1773705600,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "expense/chargeback-loss",
+          "amount": 90643
+        },
+        {
+          "side": "Dr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 4533
+        },
+        {
+          "side": "Cr",
+          "account": "assets/bank",
+          "amount": 95176
+        }
+      ]
+    },
+    {
+      "id": "gl_0022",
+      "entry_type": "razorpay_settlement",
+      "event_id": "setl_MAydKrgohLKmSv",
+      "tx_id": "UTRMAydKrgohLKmSv",
+      "ts": 1773446400,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/bank",
+          "amount": 952262
+        },
+        {
+          "side": "Dr",
+          "account": "expense/processor-fees",
+          "amount": 19504
+        },
+        {
+          "side": "Dr",
+          "account": "expense/gst-input",
+          "amount": 3509
+        },
+        {
+          "side": "Cr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 975275
+        }
+      ]
+    },
+    {
+      "id": "gl_0023",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_XvjVkqEqsxAS83",
+      "tx_id": "pay_XvjVkqEqsxAS83",
+      "ts": 1773619200,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 248591
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 210670
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 37921
+        }
+      ]
+    },
+    {
+      "id": "gl_0024",
+      "entry_type": "refund_reversal",
+      "event_id": "rfnd_2q9UwRRE21Gf2r",
+      "tx_id": "rfnd_2q9UwRRE21Gf2r",
+      "ts": 1773792000,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "income/sales-returns",
+          "amount": 210670
+        },
+        {
+          "side": "Dr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 37921
+        },
+        {
+          "side": "Cr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 248591
+        }
+      ]
+    },
+    {
+      "id": "gl_0025",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_Q8KhMFg3xZaOSR",
+      "tx_id": "pay_Q8KhMFg3xZaOSR",
+      "ts": 1773619200,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 105689
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 94365
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 11324
+        }
+      ]
+    },
+    {
+      "id": "gl_0026",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_Ydm9LTHSfbr2yY",
+      "tx_id": "pay_Ydm9LTHSfbr2yY",
+      "ts": 1773619200,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 442128
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 394757
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 47371
+        }
+      ]
+    },
+    {
+      "id": "gl_0027",
+      "entry_type": "razorpay_settlement",
+      "event_id": "setl_f8ZtZfgB4VEJI5",
+      "tx_id": "UTRf8ZtZfgB4VEJI5",
+      "ts": 1773792000,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/bank",
+          "amount": 529026
+        },
+        {
+          "side": "Dr",
+          "account": "expense/processor-fees",
+          "amount": 15926
+        },
+        {
+          "side": "Dr",
+          "account": "expense/gst-input",
+          "amount": 2865
+        },
+        {
+          "side": "Cr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 547817
+        }
+      ]
+    },
+    {
+      "id": "gl_0028",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_AHWTAqgkJpuK1y",
+      "tx_id": "pay_AHWTAqgkJpuK1y",
+      "ts": 1774051200,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 431777
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 411216
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 20561
+        }
+      ]
+    },
+    {
+      "id": "gl_0029",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_K2YcxX7lSzr0jB",
+      "tx_id": "pay_K2YcxX7lSzr0jB",
+      "ts": 1774051200,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 324762
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 289966
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 34796
+        }
+      ]
+    },
+    {
+      "id": "gl_0030",
+      "entry_type": "chargeback_loss",
+      "event_id": "disp_QHODmNEkLAfjy8",
+      "tx_id": "disp_QHODmNEkLAfjy8",
+      "ts": 1774483200,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "expense/chargeback-loss",
+          "amount": 289966
+        },
+        {
+          "side": "Dr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 34796
+        },
+        {
+          "side": "Cr",
+          "account": "assets/bank",
+          "amount": 324762
+        }
+      ]
+    },
+    {
+      "id": "gl_0031",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_jTj3O1eNkl91yY",
+      "tx_id": "pay_jTj3O1eNkl91yY",
+      "ts": 1774051200,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 272754
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 231147
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 41607
+        }
+      ]
+    },
+    {
+      "id": "gl_0032",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_hBJHAtkCKlNV7T",
+      "tx_id": "pay_hBJHAtkCKlNV7T",
+      "ts": 1774051200,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 73269
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 69780
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 3489
+        }
+      ]
+    },
+    {
+      "id": "gl_0033",
+      "entry_type": "refund_reversal",
+      "event_id": "rfnd_JiMdFAmjDQH2xL",
+      "tx_id": "rfnd_JiMdFAmjDQH2xL",
+      "ts": 1774224000,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "income/sales-returns",
+          "amount": 69780
+        },
+        {
+          "side": "Dr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 3489
+        },
+        {
+          "side": "Cr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 73269
+        }
+      ]
+    },
+    {
+      "id": "gl_0034",
+      "entry_type": "razorpay_settlement",
+      "event_id": "setl_alKiQc8PYUtJXC",
+      "tx_id": "UTRalKiQc8PYUtJXC",
+      "ts": 1774224000,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/bank",
+          "amount": 1003276
+        },
+        {
+          "side": "Dr",
+          "account": "expense/processor-fees",
+          "amount": 22050
+        },
+        {
+          "side": "Dr",
+          "account": "expense/gst-input",
+          "amount": 3967
+        },
+        {
+          "side": "Cr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 1029293
+        }
+      ]
+    },
+    {
+      "id": "gl_0035",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_VqwY21cXIb7B6b",
+      "tx_id": "pay_VqwY21cXIb7B6b",
+      "ts": 1774396800,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 198869
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 189399
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 9470
+        }
+      ]
+    },
+    {
+      "id": "gl_0036",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_iB2PPjSVKi7Vo9",
+      "tx_id": "pay_iB2PPjSVKi7Vo9",
+      "ts": 1774396800,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 283461
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 240221
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 43240
+        }
+      ]
+    },
+    {
+      "id": "gl_0037",
+      "entry_type": "dtc_sale",
+      "event_id": "pay_w84RFI1y75hvZY",
+      "tx_id": "pay_w84RFI1y75hvZY",
+      "ts": 1774396800,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 55865
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": 47343
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 8522
+        }
+      ]
+    },
+    {
+      "id": "gl_0038",
+      "entry_type": "razorpay_settlement",
+      "event_id": "setl_QUOWyYeO7IdSFi",
+      "tx_id": "UTRQUOWyYeO7IdSFi",
+      "ts": 1774569600,
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/bank",
+          "amount": 525496
+        },
+        {
+          "side": "Dr",
+          "account": "expense/processor-fees",
+          "amount": 10763
+        },
+        {
+          "side": "Dr",
+          "account": "expense/gst-input",
+          "amount": 1936
+        },
+        {
+          "side": "Cr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 538195
+        }
+      ]
+    }
+  ]
+}

@@ -67,3 +67,22 @@ func readOrders(root, world, period string) (ordersIndex, error) {
 	}
 	return idx, nil
 }
+
+// OrderGSTRates loads orders.json for (world, period) under root and returns a
+// map of order id -> the order's authoritative gst_rate string ("18", "12", …).
+// It is the legitimate, snapshotted tax-metadata recovery source (SPEC §1, §2) the
+// investigate generator uses to recover an unbooked refund's rate from its parent
+// order — the SAME source the classify recovery fetches from, exposed here so the
+// orchestrator (internal/closer) can drive the investigate recovery without
+// re-reading orders.json itself. It reads no truth (SPEC §4.4).
+func OrderGSTRates(root, world, period string) (map[string]string, error) {
+	idx, err := readOrders(root, world, period)
+	if err != nil {
+		return nil, err
+	}
+	m := make(map[string]string, len(idx))
+	for id, o := range idx {
+		m[id] = o.Notes.GSTRate
+	}
+	return m, nil
+}

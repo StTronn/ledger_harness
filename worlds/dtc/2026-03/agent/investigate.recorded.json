@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "world": "dtc",
+  "period": "2026-03",
+  "resolutions": [
+    {
+      "break_key": "check3:receivable-residual:",
+      "resolution": [
+        {
+          "event_id": "rfnd_2q9UwRRE21Gf2r",
+          "entry_type": "refund_reversal",
+          "params": {
+            "gst": 37921,
+            "net": 210670,
+            "refund_id": 0
+          }
+        }
+      ],
+      "rationale": "settlement-receivable residual 2485.91 traced to 1 unbooked refund(s); fetched each refund's order, recovered its gst_rate, and booked the refund_reversal so the receivable clears",
+      "tools_used": [
+        "orders.fetch"
+      ]
+    }
+  ]
+}

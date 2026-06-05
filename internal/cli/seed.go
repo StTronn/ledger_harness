@@ -65,7 +65,13 @@ func printSeedResult(out io.Writer, res seed.Result) {
 	fmt.Fprintf(out, "  razorpay/orders.json      %d orders (authoritative tax metadata; agent input)\n", res.NumOrders)
 	fmt.Fprintf(out, "  bank-feed.json            %d credits, %d debits\n", res.BankCredits, res.BankDebits)
 	fmt.Fprintf(out, "  truth/gl.json             %d entries (scorer only)\n", res.NumGLEntries)
-	if res.Inject.Kind != seed.InjectNone {
+	switch res.Inject.Kind {
+	case seed.InjectNone:
+		// clean period; nothing to report
+	case seed.InjectUnbookedRefund:
+		fmt.Fprintf(out, "  injected break: %s (settlement %s netted refund %s, whose gst_rate is stripped so it goes unbooked -> check#3 residual; truth GL unchanged)\n",
+			res.Inject.Kind, res.Inject.SettlementID, res.Inject.RefundID)
+	default:
 		fmt.Fprintf(out, "  injected break: %s (settlement %s drops refund %s; truth GL unchanged)\n",
 			res.Inject.Kind, res.Inject.SettlementID, res.Inject.RefundID)
 	}

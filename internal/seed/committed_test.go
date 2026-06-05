@@ -151,3 +151,73 @@ func TestCommittedHardPeriodByteIdentical(t *testing.T) {
 		t.Errorf("committed hard truth/gl.json is no longer byte-identical to a fresh --ambiguity seed")
 	}
 }
+
+// breakWorld/breakPeriod is the committed Phase-8 reconcile-break period
+// (worlds/dtc/2026-03, seeded with --inject unbooked-refund; SPEC §7 check #3,
+// §8). It carries a refund whose gst_rate is stripped so the close cannot book it,
+// leaving a receivable residual the investigate agent resolves.
+const (
+	breakWorld  = "dtc"
+	breakPeriod = "2026-03"
+)
+
+// TestCommittedBreakPeriodByteIdentical is the byte-identity guard for the
+// committed Phase-8 break period. A fresh seed of (dtc, 2026-03) WITH the
+// unbooked-refund injection must reproduce the committed fixtures byte-for-byte —
+// every agent-input file (including the gst_rate-stripped refunds.json and the
+// untouched orders.json) and the unperturbed truth GL. If this fails, the break
+// substrate drifted and the committed recorded responses/investigations pinned
+// against it (and the closer Phase-8 gate) are stale.
+func TestCommittedBreakPeriodByteIdentical(t *testing.T) {
+	committed := Layout{Root: repoRoot, World: breakWorld, Period: breakPeriod}
+	if _, err := os.Stat(committed.PaymentsPath()); err != nil {
+		t.Skipf("committed break fixtures not present (%v); skipping byte-identity guard", err)
+	}
+
+	fx, feed, gl, inj, _, err := GenerateWith(breakWorld, breakPeriod, Options{Inject: InjectUnbookedRefund})
+	if err != nil {
+		t.Fatalf("GenerateWith unbooked-refund: %v", err)
+	}
+	if inj.Kind != InjectUnbookedRefund || inj.RefundID == "" {
+		t.Fatalf("break period did not inject an unbooked refund: %+v", inj)
+	}
+
+	cases := []struct {
+		name string
+		path string
+		v    any
+	}{
+		{"payments", committed.PaymentsPath(), fx.Payments},
+		{"refunds", committed.RefundsPath(), fx.Refunds},
+		{"settlements", committed.SettlementsPath(), fx.Settlements},
+		{"disputes", committed.DisputesPath(), fx.Disputes},
+		{"orders", committed.OrdersPath(), fx.Orders},
+		{"bank-feed", committed.BankFeedPath(), feed},
+	}
+	for _, c := range cases {
+		fresh, err := MarshalStable(c.v)
+		if err != nil {
+			t.Fatalf("marshal fresh %s: %v", c.name, err)
+		}
+		onDisk, err := os.ReadFile(c.path)
+		if err != nil {
+			t.Fatalf("read committed %s: %v", c.name, err)
+		}
+		if string(fresh) != string(onDisk) {
+			t.Errorf("committed break %s (%s) is no longer byte-identical to a fresh --inject unbooked-refund seed",
+				c.name, filepath.Base(c.path))
+		}
+	}
+
+	freshGL, err := MarshalStable(gl)
+	if err != nil {
+		t.Fatalf("marshal fresh break truth GL: %v", err)
+	}
+	onDiskGL, err := os.ReadFile(committed.TruthGLPath())
+	if err != nil {
+		t.Fatalf("read committed break truth GL: %v", err)
+	}
+	if string(freshGL) != string(onDiskGL) {
+		t.Errorf("committed break truth/gl.json is no longer byte-identical to a fresh --inject unbooked-refund seed")
+	}
+}

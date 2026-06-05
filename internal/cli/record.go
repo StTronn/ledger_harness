@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/razorpay/close-agent/internal/agentclient"
+	"github.com/razorpay/close-agent/internal/closer"
 	"github.com/spf13/cobra"
 )
 
@@ -49,6 +50,52 @@ func newRecordResponsesCmd(out io.Writer) *cobra.Command {
 			}
 			fmt.Fprintf(out, "recorded %d agent response(s) for world %q period %q -> %s\n",
 				len(f.Responses), world, period, path)
+			return nil
+		},
+	}
+	addWorldPeriodFlags(cmd, &world, &period)
+	cmd.Flags().StringVar(&root, "root", "", "base directory containing worlds/ (defaults to the working directory)")
+	_ = cmd.Flags().MarkHidden("root")
+	return cmd
+}
+
+// newRecordInvestigationsCmd is the HIDDEN, deterministic generator for the
+// committed recorded-INVESTIGATION fixture (SPEC §2, §8, §12), parallel to
+// record-responses for classify:
+//
+//	close-agent record-investigations --world dtc --period 2026-03
+//
+// It rebuilds worlds/<world>/<period>/agent/investigate.recorded.json by running
+// the close pipeline up to reconcile (with the committed classify replay) and, for
+// each break, deriving the resolution from the snapshotted agent-input fixtures
+// (orders.json / refunds.json, NOT truth) — the same {entry_type, params} the rule
+// engine would have produced for the unbooked refund (closer.GenerateInvestigateRecorded).
+// It is deterministic and reproducible; a test asserts it reproduces the committed
+// file byte-for-byte. It NEVER reads truth.
+func newRecordInvestigationsCmd(out io.Writer) *cobra.Command {
+	var world, period, root string
+	cmd := &cobra.Command{
+		Use:    "record-investigations",
+		Short:  "Regenerate the committed investigate.recorded.json from the snapshotted fixtures (recovery source)",
+		Hidden: true,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if root == "" {
+				wd, err := os.Getwd()
+				if err != nil {
+					return fmt.Errorf("record-investigations: resolve working directory: %w", err)
+				}
+				root = wd
+			}
+			f, err := closer.GenerateInvestigateRecorded(root, world, period)
+			if err != nil {
+				return err
+			}
+			path := agentclient.InvestigateRecordedPath(root, world, period)
+			if err := agentclient.WriteInvestigateRecorded(path, f); err != nil {
+				return err
+			}
+			fmt.Fprintf(out, "recorded %d investigation(s) for world %q period %q -> %s\n",
+				len(f.Resolutions), world, period, path)
 			return nil
 		},
 	}
