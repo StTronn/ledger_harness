@@ -273,6 +273,27 @@ func (lg *Ledger) Journal(period ...Period) Journal {
 	return Journal{Entries: kept}
 }
 
+// AccountBalance returns the net balance of a single account, stated on its
+// normal side per the one sign convention (normal-Debit: ΣDr−ΣCr; normal-Credit:
+// ΣCr−ΣDr). It is a PURE read over the posted entries — the same fold the four
+// reports use — exposed for the Phase 5 reconcile stage (SPEC §7 check #3, which
+// needs the settlement-receivable balance at period end). An account with no
+// activity in the (optional) period reports a zero balance on the side the chart
+// gives it. An optional Period restricts the fold; an "as-of T" balance is
+// Period{To: T}. With no Period it reports over all entries.
+func (lg *Ledger) AccountBalance(account string, period ...Period) AccountBalance {
+	bals := lg.balances(effectivePeriod(period))
+	if b, ok := bals[account]; ok {
+		return *b
+	}
+	// No activity: report a zero balance on the account's normal side so the
+	// caller still gets a well-formed value (the receivable that cleared to 0).
+	return AccountBalance{
+		Account:    account,
+		NormalSide: lg.chart.NormalSide(account),
+	}
+}
+
 // rootOf returns the first path segment of an account path (its root). For
 // "income/product-sales" it returns "income". An empty or rootless path returns
 // the path unchanged.

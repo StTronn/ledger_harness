@@ -7,12 +7,15 @@
 //	  if !ok: FLAG + SKIP (Phase 4; agent in Phase 7)
 //	  entry  = ledger.Bind(c.EntryType, c.IK, c.Params)
 //	  ledger.Post(entry)                          // balance-or-reject
+//	breaks   = reconcile(ledger, raw.settlements, bankFeed)  // internal/reconcile (3 checks)
 //	result   = score(produced, truth)            // internal/score
 //
-// It is the Phase-4 orchestrator: hand-written per-event rules book the events,
+// It is the Phase-4/5 orchestrator: hand-written per-event rules book the events,
 // unmatched events are flagged and skipped (never sent anywhere yet, never
-// crashing the run), and the produced ledger is scored against the hidden truth
-// GL to print the deterministic baseline.
+// crashing the run); after all events post, the SPEC §7 three checks reconcile
+// the ledger against the settlements and the independent bank feed and LIST any
+// breaks (Phase 5 — no agent resolves them yet); and the produced ledger is
+// scored against the hidden truth GL to print the deterministic baseline.
 //
 // # Determinism (SPEC §5, §12)
 //
@@ -24,19 +27,21 @@
 //
 // # Boundaries
 //
-// closer imports ingest, classify, ledger, config, money, and score. It does NOT
-// import internal/truth directly — only internal/score reads truth (SPEC §4.4),
-// and closer reaches truth solely through the scorer. The truth-isolation guard
-// test confirms closer never imports truth.
+// closer imports ingest, classify, ledger, reconcile, config, money, and score.
+// It does NOT import internal/truth directly — only internal/score reads truth
+// (SPEC §4.4), and closer reaches truth solely through the scorer. The
+// truth-isolation guard test confirms closer (and reconcile) never import truth.
 package closer
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/razorpay/close-agent/internal/classify"
 	"github.com/razorpay/close-agent/internal/config"
 	"github.com/razorpay/close-agent/internal/ingest"
 	"github.com/razorpay/close-agent/internal/ledger"
+	"github.com/razorpay/close-agent/internal/reconcile"
 	"github.com/razorpay/close-agent/internal/score"
 )
 
@@ -59,8 +64,14 @@ type Result struct {
 	Produced   []score.Produced
 	Classified int
 	Skipped    []Skip
+	Breaks     []reconcile.Break // SPEC §7 reconciliation breaks (Phase 5; empty = clean)
 	Score      score.Result
 }
+
+// receivableAccount is the chart path whose period-end balance must clear to ~0
+// (SPEC §7 check #3, §4.1). It is named here, not read from truth, so reconcile
+// stays a pure function over the posted ledger.
+const receivableAccount = "assets/razorpay-settlement-receivable"
 
 // Run executes the close pipeline for (world, period) under root and scores it
 // against the period's truth GL. root is the base directory containing worlds/.
@@ -78,7 +89,7 @@ func Run(root, world, period string) (Result, error) {
 	tmpls := ledger.NewPlaybookTemplates(pb)
 	lg := ledger.New(ledger.NewPlaybookChart(pb))
 
-	_, events, err := ingest.IngestAndNormalize(root, world, period)
+	raw, events, err := ingest.IngestAndNormalize(root, world, period)
 	if err != nil {
 		return Result{}, err
 	}
@@ -106,6 +117,26 @@ func Run(root, world, period string) (Result, error) {
 		res.Produced = append(res.Produced, producedFrom(ev.ID, posted))
 	}
 
+	// Reconcile (SPEC §5, §7): after every event has posted, run the three checks
+	// over the posted ledger, the raw settlements, the raw batch members, and the
+	// independent bank feed. The receivable balance is read from the ledger we just
+	// built (the only money truth); reconcile itself reads no truth and no ledger
+	// internals — closer hands it plain values, keeping the §7 checks pure. In
+	// Phase 5 there is no agent: breaks are detected and listed on the Result.
+	periodEnd, err := nextMonthFirst(period)
+	if err != nil {
+		return Result{}, err
+	}
+	res.Breaks = reconcile.Reconcile(reconcile.Input{
+		Settlements:       raw.Settlements,
+		Payments:          raw.Payments,
+		Refunds:           raw.Refunds,
+		BankFeed:          raw.BankFeed,
+		ReceivableBalance: lg.AccountBalance(receivableAccount).Balance,
+		PeriodEnd:         periodEnd,
+		DateToleranceDays: settlementDateToleranceDays,
+	})
+
 	// Scoring needs the period's truth GL. Only the scorer may read truth/gl.json
 	// (SPEC §4.4), so closer hands the produced entries to score.RunScore, which
 	// loads truth behind its own allowed boundary and returns the diff. closer
@@ -117,6 +148,27 @@ func Run(root, world, period string) (Result, error) {
 	}
 	res.Score = sc
 	return res, nil
+}
+
+// settlementDateToleranceDays is the allowed gap (in days) between a settlement's
+// date and its bank-credit value date for the check #1 match (SPEC §7 "date
+// within a small tolerance"). Razorpay deposits land same-day or a day or two
+// later; 3 days comfortably covers a T+2 settlement without masking a genuinely
+// misdated credit.
+const settlementDateToleranceDays = 3
+
+// nextMonthFirst returns the first day of the month AFTER the given YYYY-MM
+// period, as a YYYY-MM-DD string — the exclusive period-end cutoff reconcile
+// uses to classify a settlement's bank credit as genuine T+2 in-transit (SPEC §7
+// check #3). It uses time only as a calendar calculator in UTC (no wall clock),
+// so it is deterministic.
+func nextMonthFirst(period string) (string, error) {
+	t, err := time.Parse("2006-01", period)
+	if err != nil {
+		return "", fmt.Errorf("closer: invalid period %q (want YYYY-MM): %w", period, err)
+	}
+	next := t.AddDate(0, 1, 0).UTC()
+	return next.Format("2006-01-02"), nil
 }
 
 // producedFrom projects a posted ledger.Entry onto the score.Produced shape the

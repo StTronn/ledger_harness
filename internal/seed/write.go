@@ -18,12 +18,22 @@ import (
 // generator is deterministic and the writer marshals stably), which is exactly
 // the reproducibility the gate asserts.
 func Seed(root, world, period string) (Result, error) {
+	return SeedWith(root, world, period, Options{})
+}
+
+// SeedWith is Seed plus the Options knobs (SPEC §5, §7): it generates and writes
+// the substrate for (world, period), optionally seeding a reconciliation break
+// into the agent-input fixtures via opts.Inject. The clean (no-inject) path is
+// byte-identical to Seed, so the committed clean fixtures are unaffected. The
+// returned Result carries the InjectResult so the CLI can report what was
+// perturbed.
+func SeedWith(root, world, period string, opts Options) (Result, error) {
 	layout, err := NewLayout(root, world, period)
 	if err != nil {
 		return Result{}, err
 	}
 
-	fx, feed, gl, err := Generate(world, period)
+	fx, feed, gl, inj, err := GenerateWith(world, period, opts)
 	if err != nil {
 		return Result{}, err
 	}
@@ -41,6 +51,7 @@ func Seed(root, world, period string) (Result, error) {
 		NumGLEntries:   len(gl.Entries),
 		BankCredits:    len(feed.Credits),
 		BankDebits:     len(feed.Debits),
+		Inject:         inj,
 	}, nil
 }
 
@@ -55,6 +66,7 @@ type Result struct {
 	NumGLEntries   int
 	BankCredits    int
 	BankDebits     int
+	Inject         InjectResult // what break (if any) was seeded; zero value = clean
 }
 
 // writeAll creates the directory tree and writes the six artifact files. The

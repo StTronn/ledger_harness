@@ -15,7 +15,7 @@ import (
 // worlds/<world>/<period>/ (SPEC §2 Phase 2, §4.4). Re-running with the same
 // flags overwrites with byte-identical content.
 func newSeedCmd(out io.Writer) *cobra.Command {
-	var world, period, root string
+	var world, period, root, inject string
 	cmd := &cobra.Command{
 		Use:   "seed",
 		Short: "Generate a deterministic fixture period (substrate + bank-feed + truth)",
@@ -31,7 +31,7 @@ func newSeedCmd(out io.Writer) *cobra.Command {
 				}
 				root = wd
 			}
-			res, err := seed.Seed(root, world, period)
+			res, err := seed.SeedWith(root, world, period, seed.Options{Inject: seed.Inject(inject)})
 			if err != nil {
 				return err
 			}
@@ -42,6 +42,8 @@ func newSeedCmd(out io.Writer) *cobra.Command {
 	addWorldPeriodFlags(cmd, &world, &period)
 	cmd.Flags().StringVar(&root, "root", "", "base directory containing worlds/ (defaults to the working directory)")
 	_ = cmd.Flags().MarkHidden("root")
+	cmd.Flags().StringVar(&inject, "inject", "",
+		fmt.Sprintf("seed a reconciliation break into the fixtures (known: %v); empty = clean", seed.KnownInjects))
 	return cmd
 }
 
@@ -56,4 +58,8 @@ func printSeedResult(out io.Writer, res seed.Result) {
 	fmt.Fprintf(out, "  razorpay/disputes.json    %d disputes\n", res.NumDisputes)
 	fmt.Fprintf(out, "  bank-feed.json            %d credits, %d debits\n", res.BankCredits, res.BankDebits)
 	fmt.Fprintf(out, "  truth/gl.json             %d entries (scorer only)\n", res.NumGLEntries)
+	if res.Inject.Kind != seed.InjectNone {
+		fmt.Fprintf(out, "  injected break: %s (settlement %s drops refund %s; truth GL unchanged)\n",
+			res.Inject.Kind, res.Inject.SettlementID, res.Inject.RefundID)
+	}
 }

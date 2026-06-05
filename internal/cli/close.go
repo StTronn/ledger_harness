@@ -64,6 +64,24 @@ func printCloseResult(out io.Writer, world, period string, res closer.Result) {
 	if sc.TrialBalanceMatches {
 		tb = "yes"
 	}
+	// Reconciliation (SPEC §7): list the breaks the three checks detected. On the
+	// clean period this is "0 breaks (reconciled)". In Phase 5 no agent resolves
+	// them; each break carries the context a Phase-8 investigate agent will need.
+	if len(res.Breaks) == 0 {
+		fmt.Fprintf(out, "  reconcile: 0 breaks (reconciled)\n")
+	} else {
+		fmt.Fprintf(out, "  reconcile: %d break(s)\n", len(res.Breaks))
+		for _, b := range res.Breaks {
+			where := b.SettlementID
+			if where == "" {
+				where = "(period)"
+			}
+			fmt.Fprintf(out, "    - check#%d %s [%s] expected=%s actual=%s candidates=%v\n",
+				b.Check, b.Kind, where, b.Expected, b.Actual, b.CandidateEventIDs)
+			fmt.Fprintf(out, "        %s\n", b.Detail)
+		}
+	}
+
 	fmt.Fprintf(out, "  trial balance matches truth: %s\n", tb)
 	fmt.Fprintf(out, "  entries correct: %d/%d\n", sc.Correct, sc.Total)
 	if len(sc.Errors) > 0 {

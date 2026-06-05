@@ -40,9 +40,26 @@ import (
 // the settlement entry balanced by construction. Disputes touch bank + expense +
 // gst only, never the receivable.
 func Generate(world, period string) (Fixtures, BankFeed, truth.GL, error) {
+	fx, feed, gl, _, err := GenerateWith(world, period, Options{})
+	return fx, feed, gl, err
+}
+
+// GenerateWith is Generate plus the Options knobs (SPEC §5, §7, §12): it
+// generates the clean substrate exactly as Generate does — same seeded RNG
+// stream, so the clean case is byte-identical — and then, if opts requests a
+// break injection, applies it as a post-generation transform to the fixtures
+// only. The hidden truth GL is produced from the clean generation and is NEVER
+// perturbed, so it stays balanced and still describes the correct world
+// (including any refund the injection later hides from a settlement batch). The
+// returned InjectResult records what (if anything) was perturbed.
+func GenerateWith(world, period string, opts Options) (Fixtures, BankFeed, truth.GL, InjectResult, error) {
+	if err := validateInject(opts.Inject); err != nil {
+		return Fixtures{}, BankFeed{}, truth.GL{}, InjectResult{}, err
+	}
+
 	cal, err := newPeriodCalendar(period)
 	if err != nil {
-		return Fixtures{}, BankFeed{}, truth.GL{}, err
+		return Fixtures{}, BankFeed{}, truth.GL{}, InjectResult{}, err
 	}
 
 	// The truth GL is built by binding the SAME playbook entry types the rest of
@@ -51,7 +68,7 @@ func Generate(world, period string) (Fixtures, BankFeed, truth.GL, error) {
 	// pure with respect to (world, period).
 	pb, err := config.DefaultPlaybook()
 	if err != nil {
-		return Fixtures{}, BankFeed{}, truth.GL{}, fmt.Errorf("seed: load playbook for truth GL: %w", err)
+		return Fixtures{}, BankFeed{}, truth.GL{}, InjectResult{}, fmt.Errorf("seed: load playbook for truth GL: %w", err)
 	}
 
 	g := &generator{
@@ -71,7 +88,7 @@ func Generate(world, period string) (Fixtures, BankFeed, truth.GL, error) {
 	g.ids = newIDGen(g.rng)
 
 	if err := g.run(); err != nil {
-		return Fixtures{}, BankFeed{}, truth.GL{}, err
+		return Fixtures{}, BankFeed{}, truth.GL{}, InjectResult{}, err
 	}
 
 	gl := truth.GL{
@@ -94,13 +111,23 @@ func Generate(world, period string) (Fixtures, BankFeed, truth.GL, error) {
 	}
 
 	// Defensive by-construction check: the truth GL MUST balance. This is a
-	// generation invariant, so a failure here is a seeder bug, not bad input.
+	// generation invariant, so a failure here is a seeder bug, not bad input. The
+	// check runs on the CLEAN truth GL, before any injection — and the injection
+	// never touches truth, so truth stays balanced regardless (a test asserts it).
 	if !gl.IsBalanced() {
 		dr, cr := gl.SumBySide()
-		return Fixtures{}, BankFeed{}, truth.GL{},
+		return Fixtures{}, BankFeed{}, truth.GL{}, InjectResult{},
 			fmt.Errorf("seed: internal error — generated truth GL does not balance (ΣDr=%s ΣCr=%s)", dr, cr)
 	}
-	return fx, feed, gl, nil
+
+	// Seed any requested reconciliation break by perturbing the agent-input
+	// fixtures only (SPEC §5, §7). truth GL and bank feed are left as generated;
+	// the break lives in the inconsistency between them and the perturbed fixture.
+	inj, err := applyInject(opts.Inject, &fx)
+	if err != nil {
+		return Fixtures{}, BankFeed{}, truth.GL{}, InjectResult{}, err
+	}
+	return fx, feed, gl, inj, nil
 }
 
 // generator carries the RNG, calendar, id minter, and the growing output slices

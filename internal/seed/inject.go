@@ -1,0 +1,141 @@
+package seed
+
+import (
+	"fmt"
+)
+
+// This file implements the seeded reconciliation BREAKS (SPEC §5, §7, §12
+// "seed each break class … and assert detection"). A break is injected as a
+// post-generation TRANSFORM of the otherwise-clean substrate: the deterministic
+// generator runs untouched (so the RNG stream, ids, amounts, and dates are
+// byte-identical to a clean seed), then the named injection perturbs exactly one
+// fixture field to create an inconsistency the Phase-5 reconcile detects. The
+// hidden truth GL is left INTACT and balanced — the books still describe the
+// correct world; only the agent-input record is made inconsistent, which is what
+// a real reconciliation break is.
+
+// Inject names a reconciliation-break class to seed into a period. The empty
+// Inject ("") means a clean period (no break). The CLI validates the flag value
+// against the known kinds before seeding.
+type Inject string
+
+const (
+	// InjectNone is the default: a clean, fully-reconciling period.
+	InjectNone Inject = ""
+	// InjectRefundInBatch drops one refund's id from the settlement batch that
+	// netted it, WITHOUT changing the deposit (the deposit still has the refund
+	// netted out). The refund itself still exists in refunds.json and in the truth
+	// GL (its refund_reversal entry is untouched), so truth still balances and
+	// still includes the omitted refund. The settlement's batch members no longer
+	// account for its (refund-reduced) deposit, so SPEC §7 check #2 (batch-sum)
+	// detects it: Σpay − Σrefund(now missing) − Σfees > net_deposit, by exactly the
+	// dropped refund's gross. This is the canonical "refund-in-batch" break of
+	// SPEC §1: a refund economically reduced the settlement's bank deposit and is
+	// in the books (truth), but the settlement record the close reconciles against
+	// no longer accounts for it. The dropped refund's payment remains a batch
+	// member, so the (Phase-8) investigate agent has a path from the break's
+	// candidate ids to the refund that explains the gap.
+	InjectRefundInBatch Inject = "refund-in-batch"
+
+	// FUTURE break classes (SPEC §1, §7, §12 — "seed each break class … and assert
+	// detection"). Only refund-in-batch is implemented in Phase 5; the others are
+	// named here so the extensibility seam is explicit and the CLI/help can grow
+	// without reshaping Options or the GenerateWith/SeedWith signatures. To add one,
+	// declare its const, list it in KnownInjects, add a case to validateInject and
+	// applyInject, and write the post-generation transform (a pure perturbation of
+	// the agent-input fixtures that leaves truth/gl.json intact). Each maps to a
+	// hypothesis the investigate agent forms (SPEC §1):
+	//
+	//   - InjectDisputeHold ("dispute-hold"): a settlement's deposit is short by a
+	//     reserve Razorpay withheld against an open dispute; the held amount lands
+	//     in a later period. Fires check #1 (amount short vs bank) and/or #3
+	//     (receivable residual = the held reserve).
+	//   - InjectTimingLag ("timing-lag"): a settlement's bank credit value-dates
+	//     outside the check #1 tolerance window (legitimately settled, but late),
+	//     so check #1's date match fails and check #3 may carry the in-transit gross.
+	//   - InjectMisbookedFee ("mis-booked-fee"): a settlement's stated fee/tax does
+	//     not match the contracted rate on its gross, so the batch-sum (check #2)
+	//     fails by the fee delta even though every member id is present.
+	//
+	// These are intentionally NOT in KnownInjects yet — declaring an unimplemented
+	// kind there would let the CLI accept a flag that applyInject cannot honour.
+)
+
+// Options carries the knobs the seeder accepts beyond (world, period). Today the
+// only knob is the break injection; keeping it a struct lets later phases add
+// break classes without changing the GenerateWith/SeedWith signatures.
+type Options struct {
+	Inject Inject
+}
+
+// KnownInjects is the closed set of supported injection kinds, used by the CLI to
+// validate the --inject flag and to print the available values. It excludes
+// InjectNone (the absence of an injection).
+var KnownInjects = []Inject{InjectRefundInBatch}
+
+// validateInject reports whether inj is a supported injection (or the empty
+// no-op). An unknown value is a CLI error, surfaced before any IO so a typo never
+// silently seeds a clean period.
+func validateInject(inj Inject) error {
+	switch inj {
+	case InjectNone, InjectRefundInBatch:
+		return nil
+	default:
+		return fmt.Errorf("seed: unknown inject %q (known: %v)", inj, KnownInjects)
+	}
+}
+
+// applyInject mutates the freshly generated fixtures in place to seed the named
+// break. It is called AFTER Generate has produced the clean, internally
+// consistent substrate, so it perturbs a known-good world rather than tangling
+// the break into the generation rules. The truth GL is NOT passed in and is
+// never touched — the injected break lives only in the agent-input fixtures.
+//
+// It returns the affected ids (for the CLI summary and tests) and an error only
+// if the injection cannot be applied to this period's substrate (e.g. no batch
+// had a refund to drop), which would be a generation-shape regression worth
+// failing loudly rather than silently seeding a clean period.
+func applyInject(inj Inject, fx *Fixtures) (InjectResult, error) {
+	switch inj {
+	case InjectNone:
+		return InjectResult{}, nil
+	case InjectRefundInBatch:
+		return injectRefundInBatch(fx)
+	default:
+		return InjectResult{}, fmt.Errorf("seed: unknown inject %q", inj)
+	}
+}
+
+// InjectResult records what an injection changed, so the CLI can report it and a
+// test can assert the break targets the expected ids. It is empty for a clean
+// (no-inject) seed.
+type InjectResult struct {
+	Kind         Inject
+	SettlementID string // the settlement whose batch was perturbed
+	RefundID     string // the refund id dropped from the batch
+}
+
+// injectRefundInBatch finds the FIRST settlement that netted a refund and removes
+// that refund's id from the settlement's refund_ids — leaving the refund in
+// refunds.json and the deposit unchanged. Choosing the first such settlement in
+// fixture order keeps the injection deterministic. The dropped refund id is the
+// one whose reversal the batch can no longer account for.
+func injectRefundInBatch(fx *Fixtures) (InjectResult, error) {
+	for i := range fx.Settlements {
+		s := &fx.Settlements[i]
+		if len(s.RefundIDs) == 0 {
+			continue
+		}
+		dropped := s.RefundIDs[0]
+		// Drop the first refund id; the deposit (s.Amount) is deliberately left as
+		// the clean, refund-reduced value, so the batch members no longer sum to it.
+		s.RefundIDs = append([]string{}, s.RefundIDs[1:]...)
+		return InjectResult{
+			Kind:         InjectRefundInBatch,
+			SettlementID: s.ID,
+			RefundID:     dropped,
+		}, nil
+	}
+	return InjectResult{}, fmt.Errorf(
+		"seed: cannot inject refund-in-batch — no settlement in this period netted a refund")
+}
