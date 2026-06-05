@@ -1,4 +1,61 @@
 {
-  "accounts": [],
-  "entry_types": []
+  "accounts": [
+    { "path": "assets/bank", "note": "linked account; reconciles to the bank feed" },
+    { "path": "assets/razorpay-settlement-receivable", "note": "Razorpay owes us; should clear ~0 at period end" },
+    { "path": "liabilities/gst-output-payable", "note": "GST collected from customers" },
+    { "path": "liabilities/dispute-reserve", "note": "reserve held against open disputes" },
+    { "path": "income/product-sales", "note": "net product revenue" },
+    { "path": "income/shipping-revenue", "note": "shipping charged to customers" },
+    { "path": "income/sales-returns", "note": "contra-revenue; refunds reduce revenue here" },
+    { "path": "expense/processor-fees", "note": "Razorpay's processing fee" },
+    { "path": "expense/gst-input", "note": "GST on Razorpay's fee, recoverable" },
+    { "path": "expense/chargeback-loss", "note": "loss recognised on a lost dispute" }
+  ],
+  "entry_types": [
+    {
+      "name": "dtc_sale",
+      "doc": "Customer purchase captured by Razorpay: gross receivable from Razorpay, split into net product revenue and output GST.",
+      "params": ["gross", "net", "gst", "payment_id"],
+      "tx_param": "payment_id",
+      "lines": [
+        { "side": "Dr", "account": "assets/razorpay-settlement-receivable", "amount": "gross" },
+        { "side": "Cr", "account": "income/product-sales", "amount": "net" },
+        { "side": "Cr", "account": "liabilities/gst-output-payable", "amount": "gst" }
+      ]
+    },
+    {
+      "name": "razorpay_settlement",
+      "doc": "Razorpay deposits net cash to the bank, having netted its fee and GST-on-fee out of the gross receivable. Posted via reconcileTx (bank is the linked account).",
+      "params": ["net_deposit", "fee", "gst_on_fee", "gross", "bank_tx_id"],
+      "tx_param": "bank_tx_id",
+      "lines": [
+        { "side": "Dr", "account": "assets/bank", "amount": "net_deposit" },
+        { "side": "Dr", "account": "expense/processor-fees", "amount": "fee" },
+        { "side": "Dr", "account": "expense/gst-input", "amount": "gst_on_fee" },
+        { "side": "Cr", "account": "assets/razorpay-settlement-receivable", "amount": "gross" }
+      ]
+    },
+    {
+      "name": "refund_reversal",
+      "doc": "Customer refund: reverse net revenue (into the contra-revenue account) and the output GST, clearing the receivable for the refunded amount.",
+      "params": ["net", "gst", "refund_id"],
+      "tx_param": "refund_id",
+      "lines": [
+        { "side": "Dr", "account": "income/sales-returns", "amount": "net" },
+        { "side": "Dr", "account": "liabilities/gst-output-payable", "amount": "gst" },
+        { "side": "Cr", "account": "assets/razorpay-settlement-receivable", "amount": "net+gst" }
+      ]
+    },
+    {
+      "name": "chargeback_loss",
+      "doc": "Lost dispute: recognise the loss and reverse the output GST, with cash leaving the bank.",
+      "params": ["net", "gst", "dispute_id"],
+      "tx_param": "dispute_id",
+      "lines": [
+        { "side": "Dr", "account": "expense/chargeback-loss", "amount": "net" },
+        { "side": "Dr", "account": "liabilities/gst-output-payable", "amount": "gst" },
+        { "side": "Cr", "account": "assets/bank", "amount": "net+gst" }
+      ]
+    }
+  ]
 }

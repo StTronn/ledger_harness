@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -29,11 +30,6 @@ func TestExecuteSubcommands(t *testing.T) {
 			name:      "report",
 			args:      []string{"report", "--world", "dtc", "--period", "2026-05", "--kind", "trial-balance"},
 			wantSubst: "close-agent report --world dtc --period 2026-05 --kind trial-balance: not implemented yet",
-		},
-		{
-			name:      "show playbook",
-			args:      []string{"show", "playbook"},
-			wantSubst: "close-agent show playbook: not implemented yet",
 		},
 		{
 			name:      "show trace",
@@ -72,6 +68,42 @@ func TestHelpListsSubcommands(t *testing.T) {
 		if !strings.Contains(out, sub) {
 			t.Errorf("--help output missing subcommand %q\n---\n%s", sub, out)
 		}
+	}
+}
+
+// TestShowPlaybookPrintsRealSchema drives `show playbook` against the committed
+// config/playbook.json and asserts it loads, validates, and prints the real
+// chart of accounts plus the entry-type templates (SPEC §4.1, §4.2, §10).
+func TestShowPlaybookPrintsRealSchema(t *testing.T) {
+	playbook := filepath.Join("..", "..", "config", "playbook.json")
+	var buf bytes.Buffer
+	if err := Execute([]string{"show", "playbook", "--playbook", playbook}, &buf); err != nil {
+		t.Fatalf("Execute(show playbook) returned error: %v", err)
+	}
+	out := buf.String()
+	wantSubstrings := []string{
+		"CHART OF ACCOUNTS",
+		"ENTRY TYPES",
+		"assets/", "liabilities/", "income/", "expense/",
+		"bank", "razorpay-settlement-receivable", "gst-output-payable",
+		"product-sales", "sales-returns", "processor-fees", "chargeback-loss",
+		"normal balance: Debit", "normal balance: Credit",
+		"dtc_sale", "razorpay_settlement", "refund_reversal", "chargeback_loss",
+		"net+gst",
+	}
+	for _, s := range wantSubstrings {
+		if !strings.Contains(out, s) {
+			t.Errorf("show playbook output missing %q\n---\n%s", s, out)
+		}
+	}
+}
+
+// TestShowPlaybookMissingFileErrors asserts a bad path surfaces as a command
+// error rather than printing a partial/empty playbook.
+func TestShowPlaybookMissingFileErrors(t *testing.T) {
+	var buf bytes.Buffer
+	if err := Execute([]string{"show", "playbook", "--playbook", "no-such-file.json"}, &buf); err == nil {
+		t.Fatal("Execute(show playbook --playbook no-such-file.json) = nil error, want error")
 	}
 }
 

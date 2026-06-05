@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/razorpay/close-agent/internal/config"
 	"github.com/spf13/cobra"
 )
 
@@ -21,17 +22,27 @@ func newShowCmd(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-// newShowPlaybookCmd: `close-agent show playbook` — will print the chart of
-// accounts and entry types from the playbook schema file.
+// newShowPlaybookCmd: `close-agent show playbook` — loads the playbook schema
+// file (chart of accounts + entry types) and prints it. Loading runs the full
+// load-time validation, so this command also proves the playbook is well-formed.
 func newShowPlaybookCmd(out io.Writer) *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "playbook",
 		Short: "Print the chart of accounts and entry types",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			notImplemented(out, "show playbook")
-			return nil
+			path, _ := cmd.Flags().GetString("playbook")
+			if path == "" {
+				path = defaultPlaybookPath
+			}
+			pb, err := config.Load(path)
+			if err != nil {
+				return err
+			}
+			return pb.Print(out)
 		},
 	}
+	cmd.Flags().String("playbook", defaultPlaybookPath, "path to the playbook JSON file")
+	return cmd
 }
 
 // newShowTraceCmd: `close-agent show trace <path>` — will print the recorded

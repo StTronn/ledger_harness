@@ -6,112 +6,402 @@ import (
 	"testing"
 )
 
-func TestParse(t *testing.T) {
+// realPlaybookPath is the committed playbook relative to this package dir.
+func realPlaybookPath() string { return filepath.Join("..", "..", "config", "playbook.json") }
+
+// TestLoadRealPlaybook loads the committed config/playbook.json and asserts it
+// encodes SPEC §4.1 / §4.2 exactly: the right accounts with the right roots, and
+// the four entry types with their balanced template lines.
+func TestLoadRealPlaybook(t *testing.T) {
+	pb, err := Load(realPlaybookPath())
+	if err != nil {
+		t.Fatalf("Load(real playbook): %v", err)
+	}
+
+	wantAccounts := map[string]RootType{
+		"assets/bank":                           RootAssets,
+		"assets/razorpay-settlement-receivable": RootAssets,
+		"liabilities/gst-output-payable":        RootLiabilities,
+		"liabilities/dispute-reserve":           RootLiabilities,
+		"income/product-sales":                  RootIncome,
+		"income/shipping-revenue":               RootIncome,
+		"income/sales-returns":                  RootIncome,
+		"expense/processor-fees":                RootExpense,
+		"expense/gst-input":                     RootExpense,
+		"expense/chargeback-loss":               RootExpense,
+	}
+	if len(pb.Accounts) != len(wantAccounts) {
+		t.Fatalf("len(Accounts) = %d, want %d", len(pb.Accounts), len(wantAccounts))
+	}
+	for path, wantRoot := range wantAccounts {
+		a, ok := pb.Account(path)
+		if !ok {
+			t.Errorf("missing account %q", path)
+			continue
+		}
+		if a.Root() != wantRoot {
+			t.Errorf("account %q root = %q, want %q", path, a.Root(), wantRoot)
+		}
+	}
+
+	// Normal-balance convention, derived from root type.
+	for path, wantSide := range map[string]Side{
+		"assets/bank":                    Debit,
+		"expense/processor-fees":         Debit,
+		"liabilities/gst-output-payable": Credit,
+		"income/product-sales":           Credit,
+	} {
+		a, _ := pb.Account(path)
+		if got := a.NormalBalance(); got != wantSide {
+			t.Errorf("account %q normal balance = %q, want %q", path, got, wantSide)
+		}
+	}
+
+	for _, name := range []string{"dtc_sale", "razorpay_settlement", "refund_reversal", "chargeback_loss"} {
+		if _, ok := pb.EntryType(name); !ok {
+			t.Errorf("missing entry type %q", name)
+		}
+	}
+	if len(pb.EntryTypes) != 4 {
+		t.Errorf("len(EntryTypes) = %d, want 4", len(pb.EntryTypes))
+	}
+}
+
+// TestRealPlaybookTemplatesBalance asserts every entry type balances by
+// construction for a realistic, internally-consistent binding (SPEC §4.2). The
+// templates use +/- only and balance precisely when the caller binds the
+// cross-param relationship the entry type assumes (e.g. dtc_sale needs
+// gross = net + gst; razorpay_settlement needs net_deposit + fee + gst_on_fee =
+// gross). These bindings are the contract the rule engine must honor; here we
+// bind them and assert ΣDr == ΣCr — the same numeric check the ledger's post()
+// will perform. The id-carrying params (payment_id, …) are bound to 0 since they
+// never appear in amount expressions.
+func TestRealPlaybookTemplatesBalance(t *testing.T) {
+	pb, err := Load(realPlaybookPath())
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	bindings := map[string]map[string]int64{
+		// gross = net + gst  => 236000 = 200000 + 36000
+		"dtc_sale": {"gross": 236000, "net": 200000, "gst": 36000, "payment_id": 0},
+		// net_deposit + fee + gst_on_fee = gross => 230688 + 4400 + 792 = 235880... pick consistent
+		"razorpay_settlement": {"net_deposit": 230808, "fee": 4400, "gst_on_fee": 792, "gross": 236000, "bank_tx_id": 0},
+		// Cr net+gst must equal Dr net + Dr gst.
+		"refund_reversal": {"net": 50000, "gst": 9000, "refund_id": 0},
+		"chargeback_loss": {"net": 50000, "gst": 9000, "dispute_id": 0},
+	}
+
+	for _, e := range pb.EntryTypes {
+		params, ok := bindings[e.Name]
+		if !ok {
+			t.Fatalf("test missing a binding for entry type %q", e.Name)
+		}
+		var dr, cr int64
+		for _, l := range e.Lines {
+			var sum int64
+			for _, tm := range l.Terms() {
+				v, declared := params[tm.Param]
+				if !declared {
+					t.Fatalf("entry %q line references param %q with no test binding", e.Name, tm.Param)
+				}
+				if tm.Plus {
+					sum += v
+				} else {
+					sum -= v
+				}
+			}
+			if l.Side == Debit {
+				dr += sum
+			} else {
+				cr += sum
+			}
+		}
+		if dr != cr {
+			t.Errorf("entry type %q does not balance for a consistent binding: ΣDr=%d ΣCr=%d", e.Name, dr, cr)
+		}
+	}
+}
+
+// TestParseValidationErrors is the malformed-variant table. Every case must be
+// rejected by Parse with a non-nil Playbook never returned.
+func TestParseValidationErrors(t *testing.T) {
 	tests := []struct {
-		name       string
-		input      string
-		wantErr    bool
-		wantAcct   int
-		wantTypes  int
-		firstAcct  string
-		firstEntry string
+		name  string
+		input string
 	}{
 		{
-			name:      "empty placeholder",
-			input:     `{"accounts": [], "entry_types": []}`,
-			wantAcct:  0,
-			wantTypes: 0,
+			name:  "unknown field rejected (strict decode)",
+			input: `{"accounts":[],"entry_types":[],"surprise":true}`,
 		},
 		{
-			name:       "populated playbook",
-			input:      `{"accounts":[{"path":"assets/bank"},{"path":"income/product-sales"}],"entry_types":[{"name":"dtc_sale"}]}`,
-			wantAcct:   2,
-			wantTypes:  1,
-			firstAcct:  "assets/bank",
-			firstEntry: "dtc_sale",
+			name:  "malformed json",
+			input: `{not json}`,
 		},
 		{
-			name:      "missing keys default to empty slices",
-			input:     `{}`,
-			wantAcct:  0,
-			wantTypes: 0,
+			name:  "wrong type for accounts",
+			input: `{"accounts":"oops","entry_types":[]}`,
 		},
 		{
-			name:    "unknown field is rejected",
-			input:   `{"accounts":[],"entry_types":[],"surprise":true}`,
-			wantErr: true,
+			name:  "account with unknown root",
+			input: `{"accounts":[{"path":"equity/retained-earnings"}],"entry_types":[]}`,
 		},
 		{
-			name:    "malformed json is rejected",
-			input:   `{not json}`,
-			wantErr: true,
+			name:  "account with no child segment",
+			input: `{"accounts":[{"path":"assets"}],"entry_types":[]}`,
 		},
 		{
-			name:    "wrong type for accounts is rejected",
-			input:   `{"accounts":"oops","entry_types":[]}`,
-			wantErr: true,
+			name:  "account with empty segment",
+			input: `{"accounts":[{"path":"assets//bank"}],"entry_types":[]}`,
+		},
+		{
+			name:  "duplicate account path",
+			input: `{"accounts":[{"path":"assets/bank"},{"path":"assets/bank"}],"entry_types":[]}`,
+		},
+		{
+			name: "line references unknown account",
+			input: `{"accounts":[{"path":"assets/bank"}],
+				"entry_types":[{"name":"x","params":["a"],"lines":[{"side":"Dr","account":"assets/nope","amount":"a"}]}]}`,
+		},
+		{
+			name: "invalid side",
+			input: `{"accounts":[{"path":"assets/bank"}],
+				"entry_types":[{"name":"x","params":["a"],"lines":[{"side":"Debit","account":"assets/bank","amount":"a"}]}]}`,
+		},
+		{
+			name: "amount references undeclared param",
+			input: `{"accounts":[{"path":"assets/bank"}],
+				"entry_types":[{"name":"x","params":["a"],"lines":[{"side":"Dr","account":"assets/bank","amount":"b"}]}]}`,
+		},
+		{
+			name: "amount uses multiplication",
+			input: `{"accounts":[{"path":"assets/bank"}],
+				"entry_types":[{"name":"x","params":["a","b"],"lines":[{"side":"Dr","account":"assets/bank","amount":"a*b"}]}]}`,
+		},
+		{
+			name: "amount uses division",
+			input: `{"accounts":[{"path":"assets/bank"}],
+				"entry_types":[{"name":"x","params":["gross","rate"],"lines":[{"side":"Dr","account":"assets/bank","amount":"gross/rate"}]}]}`,
+		},
+		{
+			name: "amount has dangling operator",
+			input: `{"accounts":[{"path":"assets/bank"}],
+				"entry_types":[{"name":"x","params":["a"],"lines":[{"side":"Dr","account":"assets/bank","amount":"a+"}]}]}`,
+		},
+		{
+			name: "amount has empty term",
+			input: `{"accounts":[{"path":"assets/bank"}],
+				"entry_types":[{"name":"x","params":["a","b"],"lines":[{"side":"Dr","account":"assets/bank","amount":"a++b"}]}]}`,
+		},
+		{
+			name: "amount is empty string",
+			input: `{"accounts":[{"path":"assets/bank"}],
+				"entry_types":[{"name":"x","params":["a"],"lines":[{"side":"Dr","account":"assets/bank","amount":""}]}]}`,
+		},
+		{
+			name: "amount has whitespace",
+			input: `{"accounts":[{"path":"assets/bank"}],
+				"entry_types":[{"name":"x","params":["a","b"],"lines":[{"side":"Dr","account":"assets/bank","amount":"a + b"}]}]}`,
+		},
+		{
+			name: "entry type with no lines",
+			input: `{"accounts":[{"path":"assets/bank"}],
+				"entry_types":[{"name":"x","params":["a"],"lines":[]}]}`,
+		},
+		{
+			name: "duplicate entry type name",
+			input: `{"accounts":[{"path":"assets/bank"}],
+				"entry_types":[
+					{"name":"x","params":["a"],"lines":[{"side":"Dr","account":"assets/bank","amount":"a"}]},
+					{"name":"x","params":["a"],"lines":[{"side":"Dr","account":"assets/bank","amount":"a"}]}]}`,
+		},
+		{
+			name: "duplicate param name",
+			input: `{"accounts":[{"path":"assets/bank"}],
+				"entry_types":[{"name":"x","params":["a","a"],"lines":[{"side":"Dr","account":"assets/bank","amount":"a"}]}]}`,
+		},
+		{
+			name: "tx_param not a declared param",
+			input: `{"accounts":[{"path":"assets/bank"}],
+				"entry_types":[{"name":"x","params":["a"],"tx_param":"ref","lines":[{"side":"Dr","account":"assets/bank","amount":"a"}]}]}`,
+		},
+		{
+			name:  "empty entry type name",
+			input: `{"accounts":[{"path":"assets/bank"}],"entry_types":[{"name":"","params":[],"lines":[{"side":"Dr","account":"assets/bank","amount":"a"}]}]}`,
+		},
+		{
+			name:  "trailing data after object",
+			input: `{"accounts":[],"entry_types":[]} {"extra":1}`,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pb, err := Parse([]byte(tt.input))
-			if tt.wantErr {
-				if err == nil {
-					t.Fatalf("Parse(%q) = nil error, want error", tt.input)
-				}
-				return
+			if err == nil {
+				t.Fatalf("Parse(%s) = nil error, want error", tt.name)
 			}
-			if err != nil {
-				t.Fatalf("Parse(%q) unexpected error: %v", tt.input, err)
-			}
-			if got := len(pb.Accounts); got != tt.wantAcct {
-				t.Errorf("len(Accounts) = %d, want %d", got, tt.wantAcct)
-			}
-			if got := len(pb.EntryTypes); got != tt.wantTypes {
-				t.Errorf("len(EntryTypes) = %d, want %d", got, tt.wantTypes)
-			}
-			if tt.firstAcct != "" && pb.Accounts[0].Path != tt.firstAcct {
-				t.Errorf("Accounts[0].Path = %q, want %q", pb.Accounts[0].Path, tt.firstAcct)
-			}
-			if tt.firstEntry != "" && pb.EntryTypes[0].Name != tt.firstEntry {
-				t.Errorf("EntryTypes[0].Name = %q, want %q", pb.EntryTypes[0].Name, tt.firstEntry)
+			if pb != nil {
+				t.Errorf("Parse(%s) returned non-nil Playbook on error", tt.name)
 			}
 		})
 	}
 }
 
+// TestParseValid covers well-formed variants, including the +/- expression forms
+// and an empty (but structurally valid) playbook.
+func TestParseValid(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		check func(t *testing.T, pb *Playbook)
+	}{
+		{
+			name:  "empty playbook is valid",
+			input: `{"accounts":[],"entry_types":[]}`,
+			check: func(t *testing.T, pb *Playbook) {
+				if len(pb.Accounts) != 0 || len(pb.EntryTypes) != 0 {
+					t.Errorf("want empty playbook, got %+v", pb)
+				}
+			},
+		},
+		{
+			name:  "missing keys default to empty",
+			input: `{}`,
+			check: func(t *testing.T, pb *Playbook) {
+				if len(pb.Accounts) != 0 || len(pb.EntryTypes) != 0 {
+					t.Errorf("want empty playbook, got %+v", pb)
+				}
+			},
+		},
+		{
+			name: "plus expression parses to two positive terms",
+			input: `{"accounts":[{"path":"assets/bank"},{"path":"income/product-sales"}],
+				"entry_types":[{"name":"x","params":["net","gst"],"lines":[
+					{"side":"Dr","account":"assets/bank","amount":"net+gst"},
+					{"side":"Cr","account":"income/product-sales","amount":"net+gst"}]}]}`,
+			check: func(t *testing.T, pb *Playbook) {
+				e, _ := pb.EntryType("x")
+				terms := e.Lines[0].Terms()
+				if len(terms) != 2 || !terms[0].Plus || !terms[1].Plus {
+					t.Errorf("net+gst terms = %+v, want two positive terms", terms)
+				}
+				if terms[0].Param != "net" || terms[1].Param != "gst" {
+					t.Errorf("net+gst params = %q,%q, want net,gst", terms[0].Param, terms[1].Param)
+				}
+			},
+		},
+		{
+			name: "leading minus and subtraction parse with correct signs",
+			input: `{"accounts":[{"path":"assets/bank"},{"path":"income/product-sales"}],
+				"entry_types":[{"name":"x","params":["a","b"],"lines":[
+					{"side":"Dr","account":"assets/bank","amount":"-a-b"},
+					{"side":"Cr","account":"income/product-sales","amount":"-a-b"}]}]}`,
+			check: func(t *testing.T, pb *Playbook) {
+				e, _ := pb.EntryType("x")
+				terms := e.Lines[0].Terms()
+				if len(terms) != 2 || terms[0].Plus || terms[1].Plus {
+					t.Errorf("-a-b terms = %+v, want two negative terms", terms)
+				}
+			},
+		},
+		{
+			name:  "channel-segmentable account path is accepted",
+			input: `{"accounts":[{"path":"income/product-sales/web"}],"entry_types":[]}`,
+			check: func(t *testing.T, pb *Playbook) {
+				a, ok := pb.Account("income/product-sales/web")
+				if !ok {
+					t.Fatal("missing channel-segmented account")
+				}
+				if a.Root() != RootIncome {
+					t.Errorf("root = %q, want income", a.Root())
+				}
+			},
+		},
+		{
+			name: "tx_param that is a declared param is accepted",
+			input: `{"accounts":[{"path":"assets/bank"}],
+				"entry_types":[{"name":"x","params":["a","ref"],"tx_param":"ref","lines":[{"side":"Dr","account":"assets/bank","amount":"a"}]}]}`,
+			check: func(t *testing.T, pb *Playbook) {
+				e, _ := pb.EntryType("x")
+				if e.TxParam != "ref" {
+					t.Errorf("TxParam = %q, want ref", e.TxParam)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pb, err := Parse([]byte(tt.input))
+			if err != nil {
+				t.Fatalf("Parse(%s) unexpected error: %v", tt.name, err)
+			}
+			tt.check(t, pb)
+		})
+	}
+}
+
+// TestRootNormalBalance pins the documented sign convention.
+func TestRootNormalBalance(t *testing.T) {
+	tests := []struct {
+		root RootType
+		want Side
+	}{
+		{RootAssets, Debit},
+		{RootExpense, Debit},
+		{RootLiabilities, Credit},
+		{RootIncome, Credit},
+	}
+	for _, tt := range tests {
+		if got := tt.root.NormalBalance(); got != tt.want {
+			t.Errorf("%q.NormalBalance() = %q, want %q", tt.root, got, tt.want)
+		}
+		if !tt.root.Valid() {
+			t.Errorf("%q.Valid() = false, want true", tt.root)
+		}
+	}
+	if RootType("equity").Valid() {
+		t.Error(`RootType("equity").Valid() = true, want false`)
+	}
+	if RootType("equity").NormalBalance() != "" {
+		t.Error(`unknown root NormalBalance should be ""`)
+	}
+}
+
+// TestLoad covers the filesystem path: a written fixture and a missing file.
 func TestLoad(t *testing.T) {
-	t.Run("reads a file from disk", func(t *testing.T) {
+	t.Run("reads and validates a file from disk", func(t *testing.T) {
 		dir := t.TempDir()
 		path := filepath.Join(dir, "playbook.json")
-		if err := os.WriteFile(path, []byte(`{"accounts":[{"path":"assets/bank"}],"entry_types":[]}`), 0o600); err != nil {
+		body := `{"accounts":[{"path":"assets/bank"}],
+			"entry_types":[{"name":"x","params":["a"],"lines":[{"side":"Dr","account":"assets/bank","amount":"a"}]}]}`
+		if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
 			t.Fatalf("write fixture: %v", err)
 		}
 		pb, err := Load(path)
 		if err != nil {
 			t.Fatalf("Load: %v", err)
 		}
-		if len(pb.Accounts) != 1 || pb.Accounts[0].Path != "assets/bank" {
-			t.Errorf("Load got %+v, want one account assets/bank", pb.Accounts)
+		if _, ok := pb.Account("assets/bank"); !ok {
+			t.Error("loaded playbook missing assets/bank")
 		}
 	})
 
 	t.Run("missing file returns error", func(t *testing.T) {
-		if _, err := Load(filepath.Join(t.TempDir(), "does-not-exist.json")); err == nil {
+		if _, err := Load(filepath.Join(t.TempDir(), "nope.json")); err == nil {
 			t.Fatal("Load(missing) = nil error, want error")
 		}
 	})
 
-	t.Run("loads the committed placeholder playbook", func(t *testing.T) {
-		// Guards that config/playbook.json stays a valid, loadable placeholder.
-		path := filepath.Join("..", "..", "config", "playbook.json")
-		pb, err := Load(path)
-		if err != nil {
-			t.Fatalf("Load(%s): %v", path, err)
+	t.Run("invalid file content surfaces a wrapped error", func(t *testing.T) {
+		dir := t.TempDir()
+		path := filepath.Join(dir, "bad.json")
+		if err := os.WriteFile(path, []byte(`{"accounts":[{"path":"equity/x"}],"entry_types":[]}`), 0o600); err != nil {
+			t.Fatalf("write fixture: %v", err)
 		}
-		if len(pb.Accounts) != 0 || len(pb.EntryTypes) != 0 {
-			t.Errorf("placeholder playbook should be empty, got %+v", pb)
+		if _, err := Load(path); err == nil {
+			t.Fatal("Load(bad content) = nil error, want error")
 		}
 	})
 }
