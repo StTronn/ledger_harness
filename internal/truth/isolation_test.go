@@ -25,7 +25,10 @@ const truthPkg = "github.com/razorpay/close-agent/internal/truth"
 var allowedImporters = map[string]bool{
 	"github.com/razorpay/close-agent/internal/truth": true,
 	"github.com/razorpay/close-agent/internal/seed":  true,
-	// "github.com/razorpay/close-agent/internal/scorer": true, // Phase 6
+	// The scorer is the ONLY reader of truth/gl.json (SPEC §4.4, §9). It loads the
+	// ground truth to diff the produced ledger against it; nothing it imports
+	// (ingest/classify/ledger) reaches back into truth, so the boundary holds.
+	"github.com/razorpay/close-agent/internal/score": true,
 }
 
 // goListPackage is the subset of `go list -json` output we need: a package's

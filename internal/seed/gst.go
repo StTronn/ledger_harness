@@ -1,6 +1,9 @@
 package seed
 
-import "github.com/razorpay/close-agent/internal/money"
+import (
+	"github.com/razorpay/close-agent/internal/gstsplit"
+	"github.com/razorpay/close-agent/internal/money"
+)
 
 // This file holds the seeder's money arithmetic: splitting a GST-inclusive gross
 // into net + GST, and computing Razorpay's fee and GST-on-fee. All of it is
@@ -19,26 +22,14 @@ var gstRatePercents = []int{5, 12, 18}
 // net + gst == gross EXACTLY (SPEC §4.2: derived amounts via division are
 // computed at bind time, in integer space).
 //
-// The maths: gross = net * (100 + rate) / 100, so
-//
-//	net = gross * 100 / (100 + rate)   (integer division, truncated)
-//	gst = gross - net                  (remainder folded into GST)
-//
-// Folding the truncation remainder into gst (rather than rounding net
-// independently) guarantees net + gst == gross to the paise, which is the
-// invariant the ledger's balance check relies on. rate must be > 0; the function
-// panics on a non-positive rate (a generator-rule bug, not runtime input).
+// This is a thin alias over gstsplit.SplitInclusive, the SINGLE canonical
+// implementation shared with the rule-engine classifier (SPEC §2 Phase 4). The
+// seeder MUST NOT carry its own copy of the formula: if the seeder's truth-GL
+// math and the classifier's posting math ever diverged by a paise, posted
+// entries would no longer equal truth and the deterministic score would silently
+// drop. Keeping the formula in exactly one place makes that drift impossible.
 func splitGSTInclusive(gross money.Money, ratePercent int) (net, gst money.Money) {
-	if ratePercent <= 0 {
-		panic("seed: splitGSTInclusive called with non-positive rate")
-	}
-	g := gross.Paise()
-	// net = g * 100 / (100 + rate). g is paise (int64); 100*g cannot realistically
-	// overflow int64 for any sane period total, but we compute as int64 directly.
-	netPaise := g * 100 / int64(100+ratePercent)
-	net = money.FromPaise(netPaise)
-	gst = gross.Sub(net) // remainder folded in, so net+gst == gross exactly
-	return net, gst
+	return gstsplit.SplitInclusive(gross, ratePercent)
 }
 
 // feeForGross computes Razorpay's processing fee on a gross amount at the given

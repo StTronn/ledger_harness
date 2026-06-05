@@ -18,11 +18,6 @@ func TestExecuteSubcommands(t *testing.T) {
 		wantSubst string
 	}{
 		{
-			name:      "close",
-			args:      []string{"close", "--world", "dtc", "--period", "2026-05"},
-			wantSubst: "close-agent close --world dtc --period 2026-05: not implemented yet",
-		},
-		{
 			name:      "report",
 			args:      []string{"report", "--world", "dtc", "--period", "2026-05", "--kind", "trial-balance"},
 			wantSubst: "close-agent report --world dtc --period 2026-05 --kind trial-balance: not implemented yet",
@@ -150,6 +145,53 @@ func TestSeedCommandRejectsBadPeriod(t *testing.T) {
 	args := []string{"seed", "--world", "dtc", "--period", "2026-13", "--root", root}
 	if err := Execute(args, &buf); err == nil {
 		t.Fatal("Execute(seed) with bad period = nil error, want error")
+	}
+}
+
+// TestCloseScoresSeededPeriod seeds a fresh period into a temp root, then closes
+// it through the CLI and asserts the Phase-4 gate: every event classifies (0
+// skips) and the score is the 100% deterministic baseline against truth. Seeding
+// and closing share the same hidden --root flag so the test never touches the
+// repo's worlds/.
+func TestCloseScoresSeededPeriod(t *testing.T) {
+	root := t.TempDir()
+	var seedBuf bytes.Buffer
+	if err := Execute([]string{"seed", "--world", "dtc", "--period", "2026-05", "--root", root}, &seedBuf); err != nil {
+		t.Fatalf("seed returned error: %v", err)
+	}
+
+	var buf bytes.Buffer
+	if err := Execute([]string{"close", "--world", "dtc", "--period", "2026-05", "--root", root}, &buf); err != nil {
+		t.Fatalf("close returned error: %v", err)
+	}
+	out := buf.String()
+	for _, want := range []string{
+		"skipped:    0 events",
+		"trial balance matches truth: yes",
+		"entries correct: 45/45",
+		"score = 100%",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("close output missing %q\n---\n%s", want, out)
+		}
+	}
+	if strings.Contains(out, "scoring errors") {
+		t.Errorf("close reported scoring errors on a clean period\n---\n%s", out)
+	}
+}
+
+// TestCloseAgainstCommittedFixtures closes the committed worlds/dtc/2026-05
+// (pointing --root at the repo root) and asserts the 100% baseline, guarding that
+// the committed fixtures + truth GL and the live pipeline agree.
+func TestCloseAgainstCommittedFixtures(t *testing.T) {
+	repoRoot := filepath.Join("..", "..")
+	var buf bytes.Buffer
+	if err := Execute([]string{"close", "--world", "dtc", "--period", "2026-05", "--root", repoRoot}, &buf); err != nil {
+		t.Fatalf("close returned error: %v", err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "score = 100%") {
+		t.Errorf("close against committed fixtures did not score 100%%\n---\n%s", out)
 	}
 }
 
