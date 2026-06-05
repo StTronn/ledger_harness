@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -16,11 +17,6 @@ func TestExecuteSubcommands(t *testing.T) {
 		args      []string
 		wantSubst string
 	}{
-		{
-			name:      "seed",
-			args:      []string{"seed", "--world", "dtc", "--period", "2026-05"},
-			wantSubst: "close-agent seed --world dtc --period 2026-05: not implemented yet",
-		},
 		{
 			name:      "close",
 			args:      []string{"close", "--world", "dtc", "--period", "2026-05"},
@@ -113,6 +109,47 @@ func TestShowTraceRequiresPath(t *testing.T) {
 	var buf bytes.Buffer
 	if err := Execute([]string{"show", "trace"}, &buf); err == nil {
 		t.Fatal("Execute(show trace) with no path = nil error, want arg error")
+	}
+}
+
+// TestSeedCommandWritesSubstrate drives `close-agent seed` against a temp root
+// (via the hidden --root flag) and asserts it writes the full SPEC §4.4 artifact
+// tree under worlds/<world>/<period>/ and prints a summary. It uses a temp dir so
+// the test never pollutes the repo's worlds/.
+func TestSeedCommandWritesSubstrate(t *testing.T) {
+	root := t.TempDir()
+	var buf bytes.Buffer
+	args := []string{"seed", "--world", "dtc", "--period", "2026-05", "--root", root}
+	if err := Execute(args, &buf); err != nil {
+		t.Fatalf("Execute(seed) returned error: %v", err)
+	}
+	if out := buf.String(); !strings.Contains(out, "seeded world \"dtc\" period \"2026-05\"") {
+		t.Errorf("seed output missing summary header:\n%s", out)
+	}
+	base := filepath.Join(root, "worlds", "dtc", "2026-05")
+	for _, rel := range []string{
+		filepath.Join("razorpay", "payments.json"),
+		filepath.Join("razorpay", "refunds.json"),
+		filepath.Join("razorpay", "settlements.json"),
+		filepath.Join("razorpay", "disputes.json"),
+		"bank-feed.json",
+		filepath.Join("truth", "gl.json"),
+	} {
+		p := filepath.Join(base, rel)
+		if _, err := os.Stat(p); err != nil {
+			t.Errorf("expected artifact %s: %v", p, err)
+		}
+	}
+}
+
+// TestSeedCommandRejectsBadPeriod asserts an invalid --period surfaces as a
+// command error rather than writing a misnamed directory.
+func TestSeedCommandRejectsBadPeriod(t *testing.T) {
+	root := t.TempDir()
+	var buf bytes.Buffer
+	args := []string{"seed", "--world", "dtc", "--period", "2026-13", "--root", root}
+	if err := Execute(args, &buf); err == nil {
+		t.Fatal("Execute(seed) with bad period = nil error, want error")
 	}
 }
 

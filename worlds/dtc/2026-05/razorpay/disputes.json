@@ -1,0 +1,44 @@
+[
+  {
+    "entity": "dispute",
+    "id": "disp_nlKU3LoBNSLEHf",
+    "amount": 278114,
+    "currency": "INR",
+    "payment_id": "pay_0A3mU80ujoi88x",
+    "status": "lost",
+    "reason": "chargeback_fraud",
+    "created_at": 1778198400,
+    "notes": {
+      "sku": "KIT-DELUXE",
+      "gst_rate": "12"
+    }
+  },
+  {
+    "entity": "dispute",
+    "id": "disp_N4MnnQuspxJIuH",
+    "amount": 117392,
+    "currency": "INR",
+    "payment_id": "pay_sP0pAJl7JZLiWq",
+    "status": "lost",
+    "reason": "chargeback_fraud",
+    "created_at": 1779667200,
+    "notes": {
+      "sku": "SERUM-30",
+      "gst_rate": "18"
+    }
+  },
+  {
+    "entity": "dispute",
+    "id": "disp_Zrzf6gUuVC6K4l",
+    "amount": 397326,
+    "currency": "INR",
+    "payment_id": "pay_kcbgizPu3Iigi8",
+    "status": "lost",
+    "reason": "chargeback_fraud",
+    "created_at": 1779667200,
+    "notes": {
+      "sku": "TONER-200",
+      "gst_rate": "12"
+    }
+  }
+]

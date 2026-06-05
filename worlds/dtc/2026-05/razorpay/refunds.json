@@ -1,0 +1,67 @@
+[
+  {
+    "entity": "refund",
+    "id": "rfnd_HNNBwnkgMLvXuE",
+    "amount": 226031,
+    "currency": "INR",
+    "payment_id": "pay_Xw1AYD2VXqrsJn",
+    "status": "processed",
+    "created_at": 1777939200,
+    "notes": {
+      "sku": "MASK-5PK",
+      "gst_rate": "18"
+    }
+  },
+  {
+    "entity": "refund",
+    "id": "rfnd_7ejUmWuUj1LCK0",
+    "amount": 357728,
+    "currency": "INR",
+    "payment_id": "pay_vaZr1vVf7gCMAZ",
+    "status": "processed",
+    "created_at": 1778976000,
+    "notes": {
+      "sku": "TONER-200",
+      "gst_rate": "5"
+    }
+  },
+  {
+    "entity": "refund",
+    "id": "rfnd_xJP9kIaHgbIRuP",
+    "amount": 230124,
+    "currency": "INR",
+    "payment_id": "pay_aWDx0MvKhFG5gr",
+    "status": "processed",
+    "created_at": 1778976000,
+    "notes": {
+      "sku": "TONER-200",
+      "gst_rate": "18"
+    }
+  },
+  {
+    "entity": "refund",
+    "id": "rfnd_t5XSpoTgNs6V75",
+    "amount": 327435,
+    "currency": "INR",
+    "payment_id": "pay_Du6GdMUlYQuXdx",
+    "status": "processed",
+    "created_at": 1779408000,
+    "notes": {
+      "sku": "KIT-DELUXE",
+      "gst_rate": "5"
+    }
+  },
+  {
+    "entity": "refund",
+    "id": "rfnd_ppVnYbgURMvqx4",
+    "amount": 363488,
+    "currency": "INR",
+    "payment_id": "pay_KzSIKzu05esFzU",
+    "status": "processed",
+    "created_at": 1779753600,
+    "notes": {
+      "sku": "TONER-200",
+      "gst_rate": "12"
+    }
+  }
+]
