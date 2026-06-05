@@ -90,5 +90,10 @@ func printCloseResult(out io.Writer, world, period string, res closer.Result) {
 			fmt.Fprintf(out, "    - [%s] %s\n", e.Class, e.EventID)
 		}
 	}
+	// Report the frozen errors.json artifact path (SPEC §9, §10) so the operator
+	// knows the single learning seam was written for this run.
+	if res.ErrorsPath != "" {
+		fmt.Fprintf(out, "  errors record: %s (schema v%d)\n", res.ErrorsPath, res.Record.SchemaVersion)
+	}
 	fmt.Fprintf(out, "score = %d%%\n", sc.Percent())
 }

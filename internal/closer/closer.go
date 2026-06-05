@@ -59,6 +59,10 @@ type Skip struct {
 // classification tallies, the events that were skipped, and the score against
 // truth. Ledger is the in-memory posted ledger so the caller can render reports;
 // Produced is the projection scored against truth.
+//
+// Record is the FROZEN errors.json RunRecord built from the score (SPEC §9, §13);
+// ErrorsPath is where Run persisted it (runs/<world>-<period>/errors.json). The
+// CLI prints the path so the operator knows the learning seam was written.
 type Result struct {
 	Ledger     *ledger.Ledger
 	Produced   []score.Produced
@@ -66,6 +70,8 @@ type Result struct {
 	Skipped    []Skip
 	Breaks     []reconcile.Break // SPEC §7 reconciliation breaks (Phase 5; empty = clean)
 	Score      score.Result
+	Record     score.RunRecord // FROZEN errors.json record (SPEC §9, §13)
+	ErrorsPath string          // path the errors.json artifact was written to
 }
 
 // receivableAccount is the chart path whose period-end balance must clear to ~0
@@ -138,15 +144,26 @@ func Run(root, world, period string) (Result, error) {
 	})
 
 	// Scoring needs the period's truth GL. Only the scorer may read truth/gl.json
-	// (SPEC §4.4), so closer hands the produced entries to score.RunScore, which
-	// loads truth behind its own allowed boundary and returns the diff. closer
-	// never names a truth type and never imports internal/truth — the
-	// truth-isolation guard confirms it.
-	sc, err := score.RunScore(root, world, period, res.Produced)
+	// (SPEC §4.4), so closer hands the produced entries to score.RunScoreRecord,
+	// which loads truth behind its own allowed boundary and returns BOTH the diff
+	// and the FROZEN errors.json RunRecord (SPEC §9, §13). closer never names a
+	// truth type and never imports internal/truth — the truth-isolation guard
+	// confirms it.
+	sc, rec, err := score.RunScoreRecord(root, world, period, res.Produced)
 	if err != nil {
 		return Result{}, err
 	}
 	res.Score = sc
+	res.Record = rec
+
+	// Emit the frozen errors.json artifact to runs/<world>-<period>/ (SPEC §9, §10).
+	// This is the single learning-layer seam; a deterministic close writes it on
+	// every run. runs/ is gitignored generated output.
+	path, err := score.WriteErrors(root, world, period, rec)
+	if err != nil {
+		return Result{}, err
+	}
+	res.ErrorsPath = path
 	return res, nil
 }
 

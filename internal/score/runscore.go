@@ -36,6 +36,25 @@ func RunScore(root, world, period string, produced []Produced) (Result, error) {
 	return Score(produced, gl), nil
 }
 
+// RunScoreRecord loads the truth GL for (world, period) under root, scores the
+// produced entries against it, AND assembles the FROZEN errors.json RunRecord — in
+// one call, behind the scorer's truth boundary. It is the orchestrator's seam for
+// the deterministic-product gate: the close pipeline gets back both the Result (to
+// print) and the RunRecord (to persist with WriteErrors) WITHOUT ever naming a
+// truth type itself (the truth-isolation guard confirms the closer never imports
+// internal/truth). The truth GL is loaded once here and consumed for both the
+// diff and the per-account deltas, so the record is built from the same oracle the
+// score reflects.
+func RunScoreRecord(root, world, period string, produced []Produced) (Result, RunRecord, error) {
+	gl, err := LoadTruth(root, world, period)
+	if err != nil {
+		return Result{}, RunRecord{}, err
+	}
+	res := Score(produced, gl)
+	rec := BuildRunRecord(world, period, produced, gl, res)
+	return res, rec, nil
+}
+
 // LoadTruth reads and validates the period's ground-truth GL. It is exported so a
 // caller that wants the raw GL (e.g. the diff command) can obtain it through the
 // scorer boundary rather than importing internal/truth directly. The returned GL

@@ -8,42 +8,80 @@ import (
 	"testing"
 )
 
-// TestExecuteSubcommands drives each command surface from SPEC §10 and asserts
-// it runs without error and prints its not-implemented stub. This is the
-// behavioral contract of the Phase 0 gate: nothing crashes, nothing errors.
-func TestExecuteSubcommands(t *testing.T) {
-	tests := []struct {
-		name      string
-		args      []string
-		wantSubst string
-	}{
-		{
-			name:      "report",
-			args:      []string{"report", "--world", "dtc", "--period", "2026-05", "--kind", "trial-balance"},
-			wantSubst: "close-agent report --world dtc --period 2026-05 --kind trial-balance: not implemented yet",
-		},
-		{
-			name:      "show trace",
-			args:      []string{"show", "trace", "runs/dtc-2026-05"},
-			wantSubst: "close-agent show trace runs/dtc-2026-05: not implemented yet",
-		},
-		{
-			name:      "diff",
-			args:      []string{"diff", "--world", "dtc", "--period", "2026-05"},
-			wantSubst: "close-agent diff --world dtc --period 2026-05: not implemented yet",
-		},
+// TestShowTraceMissingGraceful drives `show trace` at a path with no trace and
+// asserts it handles the absence GRACEFULLY (SPEC §10 gate): no error, no crash,
+// a clear "no trace found" message. In the agent-free Phase-6 product no traces
+// exist, so this is the expected outcome.
+func TestShowTraceMissingGraceful(t *testing.T) {
+	missing := filepath.Join(t.TempDir(), "runs", "dtc-2026-05")
+	var buf bytes.Buffer
+	if err := Execute([]string{"show", "trace", missing}, &buf); err != nil {
+		t.Fatalf("Execute(show trace) on missing path returned error: %v", err)
 	}
+	if got := buf.String(); !strings.Contains(got, "no trace found") {
+		t.Errorf("show trace on missing path = %q, want a graceful 'no trace found' message", got)
+	}
+}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var buf bytes.Buffer
-			if err := Execute(tt.args, &buf); err != nil {
-				t.Fatalf("Execute(%v) returned error: %v", tt.args, err)
-			}
-			if got := buf.String(); !strings.Contains(got, tt.wantSubst) {
-				t.Errorf("Execute(%v) output = %q, want substring %q", tt.args, got, tt.wantSubst)
-			}
-		})
+// TestShowTraceEmptyFileGraceful asserts an EMPTY (whitespace-only) trace file is
+// handled the same as a missing one (SPEC §10 gate, Phase-6 task): no error, the
+// graceful "no trace available (agent phases not run)" message, exit 0.
+func TestShowTraceEmptyFileGraceful(t *testing.T) {
+	dir := t.TempDir()
+	trace := filepath.Join(dir, "trace.json")
+	if err := os.WriteFile(trace, []byte("   \n"), 0o644); err != nil {
+		t.Fatalf("write empty trace: %v", err)
+	}
+	var buf bytes.Buffer
+	if err := Execute([]string{"show", "trace", trace}, &buf); err != nil {
+		t.Fatalf("Execute(show trace) on empty file returned error: %v", err)
+	}
+	out := buf.String()
+	for _, want := range []string{"no trace found", "no trace available (agent phases not run)"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("show trace on empty file = %q, want %q", out, want)
+		}
+	}
+}
+
+// TestShowTracePrettyPrintsPresent asserts that when a trace IS present (the
+// Phase-7+ case, simulated here with a minified JSON file), `show trace`
+// pretty-prints it with 2-space indentation rather than dumping it verbatim.
+func TestShowTracePrettyPrintsPresent(t *testing.T) {
+	dir := t.TempDir()
+	trace := filepath.Join(dir, "trace.json")
+	if err := os.WriteFile(trace, []byte(`{"event_id":"pay_1","decision":"dtc_sale"}`), 0o644); err != nil {
+		t.Fatalf("write trace: %v", err)
+	}
+	var buf bytes.Buffer
+	if err := Execute([]string{"show", "trace", trace}, &buf); err != nil {
+		t.Fatalf("Execute(show trace) on present file returned error: %v", err)
+	}
+	out := buf.String()
+	if strings.Contains(out, "no trace found") {
+		t.Errorf("show trace on a present trace printed the missing-trace message:\n%s", out)
+	}
+	// Pretty-printed JSON re-indents onto multiple lines with the recorded fields.
+	for _, want := range []string{"\"event_id\": \"pay_1\"", "\"decision\": \"dtc_sale\""} {
+		if !strings.Contains(out, want) {
+			t.Errorf("show trace did not pretty-print %q:\n%s", want, out)
+		}
+	}
+}
+
+// TestShowTraceResolvesDirToTraceFile asserts that pointing `show trace` at a run
+// DIRECTORY reads trace.json inside it (the SPEC §10 `show trace runs/<...>` form).
+func TestShowTraceResolvesDirToTraceFile(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "trace.json"), []byte(`{"k":"v"}`), 0o644); err != nil {
+		t.Fatalf("write trace: %v", err)
+	}
+	var buf bytes.Buffer
+	if err := Execute([]string{"show", "trace", dir}, &buf); err != nil {
+		t.Fatalf("Execute(show trace <dir>) returned error: %v", err)
+	}
+	if out := buf.String(); !strings.Contains(out, "\"k\": \"v\"") {
+		t.Errorf("show trace <dir> did not read trace.json inside it:\n%s", out)
 	}
 }
 
