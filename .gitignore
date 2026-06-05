@@ -1,0 +1,15 @@
+# Run artifacts (scores, reports, error records, traces) are generated output.
+/runs/
+
+# Go build artifacts and binaries.
+/close-agent
+/bin/
+*.exe
+*.test
+*.out
+
+# Editor / OS cruft.
+.DS_Store
+*.swp
+
+# Note: config/ and worlds/ are intentionally TRACKED (committed substrate).
