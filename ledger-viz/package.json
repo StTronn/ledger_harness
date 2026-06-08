@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "name": "ledger-viz",
+  "version": "0.0.0",
+  "scripts": {
+    "build": "pnpm -F @ledger-viz/model build && pnpm -F web build",
+    "dev": "pnpm -F web dev"
+  }
+}
