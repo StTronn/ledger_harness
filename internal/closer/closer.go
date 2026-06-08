@@ -54,9 +54,6 @@ import (
 	"time"
 
 	"github.com/razorpay/close-agent/internal/agentclient"
-	"github.com/razorpay/close-agent/internal/classify"
-	"github.com/razorpay/close-agent/internal/config"
-	"github.com/razorpay/close-agent/internal/ingest"
 	"github.com/razorpay/close-agent/internal/ledger"
 	"github.com/razorpay/close-agent/internal/reconcile"
 	"github.com/razorpay/close-agent/internal/score"
@@ -154,71 +151,31 @@ func Run(root, world, period string) (Result, error) {
 // is classified by the agent if enabled, or recorded as a Skip otherwise, and the
 // run continues. An event the agent ESCALATES is likewise a Skip, never an error.
 func RunWith(root, world, period string, opts Options) (Result, error) {
-	pb, err := config.DefaultPlaybook()
-	if err != nil {
-		return Result{}, fmt.Errorf("closer: load playbook: %w", err)
-	}
-	tmpls := ledger.NewPlaybookTemplates(pb)
-	lg := ledger.New(ledger.NewPlaybookChart(pb))
-
-	raw, events, err := ingest.IngestAndNormalize(root, world, period)
-	if err != nil {
-		return Result{}, err
-	}
-
-	// Resolve the §8 classify agent for the requested mode. The mode is validated
-	// here, but the recorded-response fixture is loaded LAZILY on the first rule
-	// miss (so a clean period needs no fixture in replay mode); a missing/malformed
-	// fixture is then a hard error. The client NEVER reads truth.
+	// Resolve the §8 classify agent for the requested mode (the fixture loads lazily
+	// on the first miss; the client NEVER reads truth). The agent supplies the shared
+	// spine's miss-resolver strategy.
 	agent, mode, err := newAgent(root, world, period, opts)
 	if err != nil {
 		return Result{}, err
 	}
 
-	// eventByID lets the investigate stage recover an event's timestamp and build
-	// candidate summaries; skippedEvents are the UNBOOKED events (rule+agent miss)
-	// the investigate agent treats as the suspects for a "settled-but-not-booked"
-	// residual break (SPEC §7 check #3, §8).
-	eventByID := make(map[string]ingest.NormalizedEvent, len(events))
-	var skippedEvents []ingest.NormalizedEvent
-
-	res := Result{Ledger: lg, AgentMode: mode}
-	for _, ev := range events {
-		eventByID[ev.ID] = ev
-		c, ok, reason := classify.Classify(ev)
-		if ok {
-			res.Classified++
-		} else {
-			// Rule miss. Consult the agent if enabled; otherwise flag-and-skip.
-			ac, agentReason, handled, err := classifyWithAgent(agent, ev, &res)
-			if err != nil {
-				return Result{}, err
-			}
-			if !handled {
-				res.Skipped = append(res.Skipped, Skip{
-					EventID: ev.ID, Type: string(ev.Type), Reason: skipReason(reason, agentReason),
-				})
-				skippedEvents = append(skippedEvents, ev)
-				continue
-			}
-			c = ac
-		}
-		entry, err := ledger.Bind(tmpls, c.EntryType, c.IK, c.Params)
-		if err != nil {
-			return Result{}, fmt.Errorf("closer: bind %s for event %s: %w", c.EntryType, ev.ID, err)
-		}
-		entry.Ts = c.Ts
-		entry.TxID = c.TxID
-		posted, err := lg.Post(entry)
-		if err != nil {
-			return Result{}, fmt.Errorf("closer: post %s for event %s: %w", c.EntryType, ev.ID, err)
-		}
-		res.Produced = append(res.Produced, producedFrom(ev.ID, posted))
+	// Run the shared book loop with the inline-agent resolver (SPEC §5).
+	er, err := runEvents(root, world, period, agent.resolver())
+	if err != nil {
+		return Result{}, err
+	}
+	res := Result{
+		Ledger:     er.lg,
+		AgentMode:  mode,
+		Produced:   er.produced,
+		Classified: er.classified,
+		AgentDone:  er.agentDone,
+		Traces:     er.traces,
+		Skipped:    er.skipped,
 	}
 
-	// Persist the agent traces (if any) to runs/<world>-<period>/trace.json so the
-	// `show trace` command can print them (SPEC §9, §10). The deterministic agent-
-	// off baseline produces none and writes no file.
+	// Persist the classify traces (if any) so `show trace` can print them. The
+	// agent-off baseline produces none.
 	if len(res.Traces) > 0 {
 		tp, err := writeTraces(root, world, period, res.Traces)
 		if err != nil {
@@ -227,58 +184,34 @@ func RunWith(root, world, period string, opts Options) (Result, error) {
 		res.TracePath = tp
 	}
 
-	// Park the events this run could NOT book (rule misses the agent didn't handle,
-	// or agent escalations) as the async classify WORK QUEUE (SPEC §8 async seam).
-	// close --agent off is the front door of the async flow: it books what it can
-	// and emits proposals.json so the classify worker can process the long tail out
-	// of band; `classify apply` later merges the worker's answers back in. A run that
-	// booked everything writes no queue.
-	if len(skippedEvents) > 0 {
-		pp, err := writeProposalsQueue(root, world, period, res.Skipped, eventByID)
+	// Park the events this run could NOT book as the async classify WORK QUEUE (SPEC
+	// §8): close --agent off is the front door of the async flow — its skips become
+	// proposals.json for the classify worker. A run that booked everything writes none.
+	if len(er.skippedEvents) > 0 {
+		pp, err := writeProposalsQueue(root, world, period, res.Skipped, er.eventByID)
 		if err != nil {
 			return Result{}, err
 		}
 		res.ProposalsPath = pp
 	}
 
-	// Reconcile (SPEC §5, §7): after every event has posted, run the three checks
-	// over the posted ledger, the raw settlements, the raw batch members, and the
-	// independent bank feed. The receivable balance is read from the ledger we just
-	// built (the only money truth); reconcile itself reads no truth and no ledger
-	// internals — closer hands it plain values, keeping the §7 checks pure. In
-	// Phase 5 there is no agent: breaks are detected and listed on the Result.
+	// Reconcile (SPEC §5, §7) over the posted ledger + raw records.
 	periodEnd, err := nextMonthFirst(period)
 	if err != nil {
 		return Result{}, err
 	}
-	reconInput := func() reconcile.Input {
-		return reconcile.Input{
-			Settlements:       raw.Settlements,
-			Payments:          raw.Payments,
-			Refunds:           raw.Refunds,
-			BankFeed:          raw.BankFeed,
-			ReceivableBalance: lg.AccountBalance(receivableAccount).Balance,
-			PeriodEnd:         periodEnd,
-			DateToleranceDays: settlementDateToleranceDays,
-		}
-	}
-	res.Breaks = reconcile.Reconcile(reconInput())
+	res.Breaks = reconcile.Reconcile(er.reconcileInput(periodEnd))
 
-	// Investigate (SPEC §5, §7, §8, Phase 8): when the agent is enabled, hand each
-	// break to the §8 investigate agent. A resolution's postings are bound+posted
-	// through the ledger (balance-or-reject) exactly like a classification, then the
-	// ledger is RE-RECONCILED so a genuinely-fixed break clears; a break the agent
-	// escalates (or any break when the agent is off) is LEFT listed and recorded as
-	// an Escalation — never guessed. Every consultation emits a FROZEN trace.
+	// Investigate (SPEC §7, §8, Phase 8): when the agent is enabled, hand each break
+	// to the §8 investigate agent, bind+post any resolution, RE-RECONCILE so a fixed
+	// break clears, and escalate the rest (listed, never guessed).
 	if agent.enabled() && len(res.Breaks) > 0 {
-		candidates := summarizeEvents(skippedEvents)
-		if err := investigateBreaks(agent, tmpls, lg, eventByID, candidates, reconInput, &res); err != nil {
+		candidates := summarizeEvents(er.skippedEvents)
+		reconInput := func() reconcile.Input { return er.reconcileInput(periodEnd) }
+		if err := investigateBreaks(agent, er.tmpls, er.lg, er.eventByID, candidates, reconInput, &res); err != nil {
 			return Result{}, err
 		}
 	}
-
-	// Persist the investigate traces (if any) to runs/<world>-<period>/investigate-trace.json
-	// so `show trace <path>` can print the investigate trajectory (SPEC §9, §10).
 	if len(res.InvestigateTraces) > 0 {
 		ip, err := writeInvestigateTraces(root, world, period, res.InvestigateTraces)
 		if err != nil {
@@ -287,26 +220,13 @@ func RunWith(root, world, period string, opts Options) (Result, error) {
 		res.InvestigateTracePath = ip
 	}
 
-	// Scoring needs the period's truth GL. Only the scorer may read truth/gl.json
-	// (SPEC §4.4), so closer hands the produced entries to score.RunScoreRecord,
-	// which loads truth behind its own allowed boundary and returns BOTH the diff
-	// and the FROZEN errors.json RunRecord (SPEC §9, §13). closer never names a
-	// truth type and never imports internal/truth — the truth-isolation guard
-	// confirms it.
-	sc, rec, err := score.RunScoreRecord(root, world, period, res.Produced)
+	// Score against truth (scorer-only boundary) + emit the frozen errors.json.
+	sc, rec, path, err := scoreAndWrite(root, world, period, res.Produced)
 	if err != nil {
 		return Result{}, err
 	}
 	res.Score = sc
 	res.Record = rec
-
-	// Emit the frozen errors.json artifact to runs/<world>-<period>/ (SPEC §9, §10).
-	// This is the single learning-layer seam; a deterministic close writes it on
-	// every run. runs/ is gitignored generated output.
-	path, err := score.WriteErrors(root, world, period, rec)
-	if err != nil {
-		return Result{}, err
-	}
 	res.ErrorsPath = path
 	return res, nil
 }

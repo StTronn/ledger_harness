@@ -6,13 +6,10 @@ import (
 	"github.com/razorpay/close-agent/internal/agentclient"
 	"github.com/razorpay/close-agent/internal/classify"
 	"github.com/razorpay/close-agent/internal/classifyq"
-	"github.com/razorpay/close-agent/internal/config"
 	"github.com/razorpay/close-agent/internal/gstsplit"
 	"github.com/razorpay/close-agent/internal/ingest"
-	"github.com/razorpay/close-agent/internal/ledger"
 	"github.com/razorpay/close-agent/internal/money"
 	"github.com/razorpay/close-agent/internal/reconcile"
-	"github.com/razorpay/close-agent/internal/score"
 )
 
 // async.go is the deterministic half of the ASYNCHRONOUS classify pipeline (the
@@ -80,18 +77,6 @@ func RunApply(root, world, period string, opts ApplyOptions) (Result, error) {
 		reviewer = classifyq.AutoReviewer{}
 	}
 
-	pb, err := config.DefaultPlaybook()
-	if err != nil {
-		return Result{}, fmt.Errorf("closer: load playbook: %w", err)
-	}
-	tmpls := ledger.NewPlaybookTemplates(pb)
-	lg := ledger.New(ledger.NewPlaybookChart(pb))
-
-	raw, events, err := ingest.IngestAndNormalize(root, world, period)
-	if err != nil {
-		return Result{}, err
-	}
-
 	rf, err := classifyq.ReadResults(classifyq.ResultsPath(root, world, period))
 	if err != nil {
 		return Result{}, err
@@ -102,62 +87,46 @@ func RunApply(root, world, period string, opts ApplyOptions) (Result, error) {
 		return Result{}, err
 	}
 
-	res := Result{Ledger: lg, AgentMode: agentclient.Mode("async-apply")}
-	for _, ev := range events {
-		c, ok, _ := classify.Classify(ev)
-		if ok {
-			res.Classified++
-		} else {
-			ac, skip, handled, err := applyResolved(ev, resultsByID, rates, reviewer)
-			if err != nil {
-				return Result{}, err
-			}
-			if !handled {
-				res.Skipped = append(res.Skipped, Skip{EventID: ev.ID, Type: string(ev.Type), Reason: skip})
-				continue
-			}
-			res.AgentDone++
-			c = ac
-		}
-		entry, err := ledger.Bind(tmpls, c.EntryType, c.IK, c.Params)
-		if err != nil {
-			return Result{}, fmt.Errorf("closer: bind %s for event %s: %w", c.EntryType, ev.ID, err)
-		}
-		entry.Ts = c.Ts
-		entry.TxID = c.TxID
-		posted, err := lg.Post(entry)
-		if err != nil {
-			return Result{}, fmt.Errorf("closer: post %s for event %s: %w", c.EntryType, ev.ID, err)
-		}
-		res.Produced = append(res.Produced, producedFrom(ev.ID, posted))
+	// Run the shared book loop with the async resolver (results-store lookup +
+	// citation validation + review + money derivation).
+	er, err := runEvents(root, world, period, asyncResolver(resultsByID, rates, reviewer))
+	if err != nil {
+		return Result{}, err
+	}
+	res := Result{
+		Ledger:     er.lg,
+		AgentMode:  agentclient.Mode("async-apply"),
+		Produced:   er.produced,
+		Classified: er.classified,
+		AgentDone:  er.agentDone,
+		Skipped:    er.skipped,
 	}
 
 	periodEnd, err := nextMonthFirst(period)
 	if err != nil {
 		return Result{}, err
 	}
-	res.Breaks = reconcile.Reconcile(reconcile.Input{
-		Settlements:       raw.Settlements,
-		Payments:          raw.Payments,
-		Refunds:           raw.Refunds,
-		BankFeed:          raw.BankFeed,
-		ReceivableBalance: lg.AccountBalance(receivableAccount).Balance,
-		PeriodEnd:         periodEnd,
-		DateToleranceDays: settlementDateToleranceDays,
-	})
+	res.Breaks = reconcile.Reconcile(er.reconcileInput(periodEnd))
 
-	sc, rec, err := score.RunScoreRecord(root, world, period, res.Produced)
+	sc, rec, path, err := scoreAndWrite(root, world, period, res.Produced)
 	if err != nil {
 		return Result{}, err
 	}
 	res.Score = sc
 	res.Record = rec
-	path, err := score.WriteErrors(root, world, period, rec)
-	if err != nil {
-		return Result{}, err
-	}
 	res.ErrorsPath = path
 	return res, nil
+}
+
+// asyncResolver is the shared-spine resolveMiss strategy for the APPLY stage: it
+// resolves a rule-missed event from the worker's results store (applyResolved
+// re-verifies the citation, runs review, and derives the money). It emits no agent
+// trace at apply time — the worker produced the decision out of band.
+func asyncResolver(resultsByID map[string]classifyq.Result, rates map[string]string, reviewer classifyq.Reviewer) resolveMiss {
+	return func(ev ingest.NormalizedEvent) (*classify.Classification, string, bool, *agentclient.Trace, error) {
+		c, skip, handled, err := applyResolved(ev, resultsByID, rates, reviewer)
+		return c, skip, handled, nil, err
+	}
 }
 
 // applyResolved turns the async worker's Result for a rule-missed event into a

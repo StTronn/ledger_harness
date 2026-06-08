@@ -134,43 +134,35 @@ func (p *agentProvider) investigateClientFor() (agentclient.InvestigateClient, e
 // Options; kept as its own type only so newAgent's signature is self-describing.
 type agentOptions = Options
 
-// classifyWithAgent consults the agent for a rule-missed event and, if the agent
-// classified it, returns the bindable Classification (handled=true). When the
-// agent is off, or the agent escalated ({unclassifiable}), it returns handled=false
-// and the reason to fold into the Skip. Every consultation (including an
-// escalation) appends a FROZEN trace to res.Traces and increments res.AgentDone on
-// a successful classification.
-//
-// It returns an error only for an agent infrastructure failure (a missing/malformed
-// recorded fixture, a live transport error) — never for an event the agent
-// declines, which is a normal escalation. The recorded fixture is loaded lazily on
-// THIS first miss, so a clean period never requires one.
-func classifyWithAgent(p *agentProvider, ev ingest.NormalizedEvent, res *Result) (*classify.Classification, string, bool, error) {
-	if p == nil || !p.enabled() {
-		return nil, "", false, nil // agent off: caller flags-and-skips with the rule reason.
+// resolver returns the shared-spine resolveMiss strategy for the SYNCHRONOUS inline
+// agent: consult the §8 classify agent for a rule-missed event and, if it
+// classified the event, return the bindable Classification (handled=true);
+// otherwise (agent off, or an escalation) return handled=false with the reason to
+// fold into the Skip. It always returns the FROZEN trace of a consultation (even an
+// escalation) so the loop records it; the loop owns the AgentDone tally. The
+// recorded fixture is loaded lazily on the first miss, so a clean period needs none.
+func (p *agentProvider) resolver() resolveMiss {
+	return func(ev ingest.NormalizedEvent) (*classify.Classification, string, bool, *agentclient.Trace, error) {
+		if p == nil || !p.enabled() {
+			return nil, "", false, nil, nil // agent off: skip with the rule reason.
+		}
+		agent, err := p.clientFor()
+		if err != nil {
+			return nil, "", false, nil, err
+		}
+		out, trace, err := agent.Classify(agentclient.SummarizeEvent(ev))
+		if err != nil {
+			return nil, "", false, nil, fmt.Errorf("closer: agent classify event %s: %w", ev.ID, err)
+		}
+		if !out.Classifiable() {
+			return nil, agentEscalationReason(out), false, &trace, nil
+		}
+		c, err := classificationFromAgent(ev, out)
+		if err != nil {
+			return nil, "", false, &trace, fmt.Errorf("closer: bind agent decision for event %s: %w", ev.ID, err)
+		}
+		return c, "", true, &trace, nil
 	}
-	agent, err := p.clientFor()
-	if err != nil {
-		return nil, "", false, err
-	}
-
-	summary := agentclient.SummarizeEvent(ev)
-	out, trace, err := agent.Classify(summary)
-	if err != nil {
-		return nil, "", false, fmt.Errorf("closer: agent classify event %s: %w", ev.ID, err)
-	}
-	res.Traces = append(res.Traces, trace)
-
-	if !out.Classifiable() {
-		return nil, agentEscalationReason(out), false, nil
-	}
-
-	c, err := classificationFromAgent(ev, out)
-	if err != nil {
-		return nil, "", false, fmt.Errorf("closer: bind agent decision for event %s: %w", ev.ID, err)
-	}
-	res.AgentDone++
-	return c, "", true, nil
 }
 
 // agentEscalationReason renders the reason an escalated event ends up skipped,

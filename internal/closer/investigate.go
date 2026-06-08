@@ -9,7 +9,6 @@ import (
 
 	"github.com/razorpay/close-agent/internal/agentclient"
 	"github.com/razorpay/close-agent/internal/classify"
-	"github.com/razorpay/close-agent/internal/config"
 	"github.com/razorpay/close-agent/internal/ingest"
 	"github.com/razorpay/close-agent/internal/ledger"
 	"github.com/razorpay/close-agent/internal/reconcile"
@@ -219,65 +218,24 @@ func writeInvestigateTraces(root, world, period string, traces []agentclient.Inv
 // the booked entry equals truth to the paise). A break no posting can resolve is
 // recorded as a deterministic escalation.
 func GenerateInvestigateRecorded(root, world, period string) (agentclient.RecordedInvestigateFile, error) {
-	pb, err := config.DefaultPlaybook()
-	if err != nil {
-		return agentclient.RecordedInvestigateFile{}, fmt.Errorf("closer: load playbook: %w", err)
-	}
-	tmpls := ledger.NewPlaybookTemplates(pb)
-	lg := ledger.New(ledger.NewPlaybookChart(pb))
-
-	raw, events, err := ingest.IngestAndNormalize(root, world, period)
-	if err != nil {
-		return agentclient.RecordedInvestigateFile{}, err
-	}
-
-	// Replay classify so recovered events book exactly as the runtime does; on this
-	// break period the only miss is the rate-stripped refund, which classify escalates
-	// (it recovers payments, not refunds) so it stays unbooked for investigate.
+	// Run the shared book loop with the REPLAY classify resolver so the breaks match
+	// exactly what `close --agent replay` sees BEFORE investigate; on this break
+	// period the only miss is the rate-stripped refund, which classify escalates (it
+	// recovers payments, not refunds), so it stays unbooked for investigate.
 	agent, _, err := newAgent(root, world, period, Options{Agent: agentclient.ModeReplay})
 	if err != nil {
 		return agentclient.RecordedInvestigateFile{}, err
 	}
-
-	scratch := &Result{Ledger: lg}
-	var skipped []ingest.NormalizedEvent
-	for _, ev := range events {
-		c, ok, _ := classify.Classify(ev)
-		if !ok {
-			ac, _, handled, err := classifyWithAgent(agent, ev, scratch)
-			if err != nil {
-				return agentclient.RecordedInvestigateFile{}, err
-			}
-			if !handled {
-				skipped = append(skipped, ev)
-				continue
-			}
-			c = ac
-		}
-		entry, err := ledger.Bind(tmpls, c.EntryType, c.IK, c.Params)
-		if err != nil {
-			return agentclient.RecordedInvestigateFile{}, fmt.Errorf("closer: bind %s for event %s: %w", c.EntryType, ev.ID, err)
-		}
-		entry.Ts = c.Ts
-		entry.TxID = c.TxID
-		if _, err := lg.Post(entry); err != nil {
-			return agentclient.RecordedInvestigateFile{}, fmt.Errorf("closer: post %s for event %s: %w", c.EntryType, ev.ID, err)
-		}
+	er, err := runEvents(root, world, period, agent.resolver())
+	if err != nil {
+		return agentclient.RecordedInvestigateFile{}, err
 	}
 
 	periodEnd, err := nextMonthFirst(period)
 	if err != nil {
 		return agentclient.RecordedInvestigateFile{}, err
 	}
-	breaks := reconcile.Reconcile(reconcile.Input{
-		Settlements:       raw.Settlements,
-		Payments:          raw.Payments,
-		Refunds:           raw.Refunds,
-		BankFeed:          raw.BankFeed,
-		ReceivableBalance: lg.AccountBalance(receivableAccount).Balance,
-		PeriodEnd:         periodEnd,
-		DateToleranceDays: settlementDateToleranceDays,
-	})
+	breaks := reconcile.Reconcile(er.reconcileInput(periodEnd))
 
 	// Recovery sources (agent-input, never truth): the order gst_rate per order id,
 	// and the payment id -> order id map so a refund (which links only to its
@@ -286,8 +244,8 @@ func GenerateInvestigateRecorded(root, world, period string) (agentclient.Record
 	if err != nil {
 		return agentclient.RecordedInvestigateFile{}, err
 	}
-	payOrder := make(map[string]string, len(raw.Payments))
-	for _, p := range raw.Payments {
+	payOrder := make(map[string]string, len(er.raw.Payments))
+	for _, p := range er.raw.Payments {
 		payOrder[p.ID] = p.OrderID
 	}
 
@@ -298,7 +256,7 @@ func GenerateInvestigateRecorded(root, world, period string) (agentclient.Record
 		Resolutions:   make([]agentclient.RecordedResolution, 0, len(breaks)),
 	}
 	for _, b := range breaks {
-		f.Resolutions = append(f.Resolutions, recoverBreak(b, skipped, payOrder, rates))
+		f.Resolutions = append(f.Resolutions, recoverBreak(b, er.skippedEvents, payOrder, rates))
 	}
 	return f, nil
 }
