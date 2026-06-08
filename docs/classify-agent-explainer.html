@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>close-agent · Classify agent & the chart of accounts</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a23; --panel2:#1e222e; --ink:#e7e9ee; --muted:#9aa3b2;
+    --line:#2a2f3d; --green:#3ecf8e; --red:#ff6b6b; --amber:#ffc857; --blue:#5aa9ff; --violet:#b78bff;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+    --asset:#5aa9ff; --liab:#ffc857; --inc:#3ecf8e; --exp:#ff8f6b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15.5px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}
+  .wrap{max-width:1000px;margin:0 auto;padding:38px 22px 90px}
+  h1{font-size:28px;margin:0 0 6px;letter-spacing:-.5px}
+  h2{font-size:21px;margin:42px 0 8px;letter-spacing:-.3px}
+  h3{font-size:16px;margin:22px 0 8px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+  .sub{color:var(--muted);margin:0 0 8px}
+  p{margin:10px 0}
+  code,.mono{font-family:var(--mono)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:14px 0}
+  .tag{display:inline-block;font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+
+  /* example card */
+  .ex{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--mono);font-size:13.5px}
+  .ex .col{flex:1;min-width:210px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .ex .k{color:var(--muted)} .ex b{color:var(--ink)}
+  .strip{color:var(--red);font-weight:700}
+
+  /* toggle */
+  .toggle{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;width:max-content;margin:6px 0}
+  .toggle button{background:var(--panel2);color:var(--muted);border:0;padding:10px 16px;font:inherit;font-size:14px;cursor:pointer}
+  .toggle button.on{background:var(--green);color:#06281a;font-weight:700}
+  .toggle button.on.bad{background:var(--red);color:#2a0d0d}
+  .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
+  .btn{background:var(--violet);color:#1a0e2e;border:0;border-radius:9px;padding:10px 18px;font:inherit;font-weight:700;cursor:pointer}
+  .btn.sec{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+
+  /* timeline */
+  .tl{display:flex;align-items:stretch;gap:0;flex-wrap:nowrap;overflow-x:auto;padding:8px 0 4px}
+  .stage{position:relative;min-width:120px;flex:1;text-align:center}
+  .stage .box{margin:0 6px;border:1.5px solid var(--line);border-radius:10px;padding:12px 6px;background:var(--panel2);transition:all .35s;height:100%}
+  .stage .box .t{font-size:13px;font-weight:700}
+  .stage .box .d{font-size:11px;color:var(--muted);margin-top:2px}
+  .stage.active .box{border-color:var(--violet);background:#241a38;box-shadow:0 0 0 3px rgba(183,139,255,.18)}
+  .stage.done .box{border-color:#2d6b4a}
+  .stage.skip .box{opacity:.35}
+  .stage .arrow{position:absolute;right:-2px;top:50%;transform:translateY(-50%);color:var(--line);z-index:2}
+  .agent-row{margin-top:14px;border-top:1px dashed var(--line);padding-top:14px}
+  .agentbox{border:1.5px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--panel2);transition:all .35s}
+  .agentbox.active{border-color:var(--violet);background:#241a38;box-shadow:0 0 0 3px rgba(183,139,255,.18)}
+  .agentbox.off{opacity:.3}
+
+  /* narration */
+  .now{min-height:54px;background:var(--panel2);border:1px solid var(--line);border-left:4px solid var(--violet);
+    border-radius:10px;padding:12px 16px;font-size:14.5px;margin:12px 0}
+  .now b{color:var(--violet)}
+
+  /* CoA */
+  .coa{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:8px}
+  @media(max-width:760px){.coa{grid-template-columns:repeat(2,1fr)}}
+  .grp{border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--panel)}
+  .grp h4{margin:0 0 8px;font-size:12px;letter-spacing:.5px;text-transform:uppercase}
+  .grp.assets h4{color:var(--asset)} .grp.liabilities h4{color:var(--liab)}
+  .grp.income h4{color:var(--inc)} .grp.expense h4{color:var(--exp)}
+  .acct{font-family:var(--mono);font-size:11.5px;border:1px solid var(--line);border-radius:7px;padding:6px 8px;margin:5px 0;
+    background:var(--panel2);transition:all .4s;position:relative}
+  .acct .nm{color:var(--muted)}
+  .acct .amt{display:block;margin-top:3px;font-size:13px;font-weight:700;opacity:0;transition:opacity .4s}
+  .acct.hit{background:#15233a;border-color:var(--blue)}
+  .acct.hit .amt{opacity:1}
+  .acct.dr .amt{color:var(--blue)} .acct.cr .amt{color:var(--green)}
+  .acct .side{position:absolute;top:6px;right:8px;font-size:10px;font-weight:800;opacity:0;transition:opacity .4s}
+  .acct.hit .side{opacity:1}
+  .acct.dr .side{color:var(--blue)} .acct.cr .side{color:var(--green)}
+  .bal{margin-top:10px;font-family:var(--mono);font-size:13px;color:var(--muted)}
+  .bal.ok{color:var(--green)}
+
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:8px 0}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left}
+  th{background:var(--panel2);color:var(--muted)}
+  .calc{font-family:var(--mono);font-size:13px;white-space:pre;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:13px 15px;overflow-x:auto}
+  .ok{color:var(--green)} .bad{color:var(--red)} .warn{color:var(--amber)}
+  .small{font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>What triggers the classify agent — and what it does to the books</h1>
+  <p class="sub">Follow one real payment, <code>pay_XWY8pubMAagVwC</code>, through the per-event pipeline and watch it post into the chart of accounts.</p>
+
+  <!-- EXAMPLE -->
+  <div class="card">
+    <h3 style="margin-top:0">The example event</h3>
+    <div class="ex">
+      <div class="col">
+        <div class="k">PAYMENT (the event)</div>
+        <div>id &nbsp;<b>pay_XWY8pubMAagVwC</b></div>
+        <div>amount &nbsp;<b>₹3,861.58</b> <span class="small">(386158 paise)</span></div>
+        <div>sku &nbsp;<b>TONER-200</b></div>
+        <div>gst_rate &nbsp;<span class="strip" id="rateField">"" (stripped)</span></div>
+      </div>
+      <div class="col">
+        <div class="k">ORDER (recovery source)</div>
+        <div>id &nbsp;<b>order_SabVgcKXqe0eqv</b></div>
+        <div>gst_rate &nbsp;<b style="color:var(--green)">"5"</b> <span class="small">← true rate kept here</span></div>
+        <div class="small" style="margin-top:8px">orders.json is agent INPUT, never truth. The payment lost its rate; the order still has it.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INTERACTIVE TIMELINE -->
+  <h2>The per-event timeline</h2>
+  <p>The orchestrator walks the event journal <b>one event at a time</b>. Pick the payment's state, then step it through:</p>
+
+  <div class="toggle" id="rateToggle">
+    <button class="on" onclick="setRate(true)">gst_rate present ("5")</button>
+    <button class="bad" onclick="setRate(false)">gst_rate stripped ("")</button>
+  </div>
+  <div class="controls">
+    <button class="btn" id="stepBtn" onclick="step()">▶ Step</button>
+    <button class="btn sec" onclick="resetTL()">Reset</button>
+    <span class="small" id="modeNote"></span>
+  </div>
+
+  <div class="card">
+    <div class="tl" id="timeline"></div>
+    <div class="agent-row">
+      <div class="agentbox off" id="agentBox">
+        <b style="color:var(--violet)">§8 classify agent</b> — consulted only on a rule MISS, for this one event.
+        <div class="small" id="agentDetail" style="margin-top:4px">idle (no miss yet)</div>
+      </div>
+    </div>
+    <div class="now" id="narration">Press <b>▶ Step</b> to advance the event through the pipeline.</div>
+  </div>
+
+  <!-- CHART OF ACCOUNTS -->
+  <h2>The chart of accounts (where it lands)</h2>
+  <p>When the event finally <b>posts</b>, it expands the <code>dtc_sale</code> template into a balanced double entry. Watch the 3 accounts light up:</p>
+  <div class="card">
+    <div class="coa" id="coa"></div>
+    <div class="bal" id="balLine">— not posted yet —</div>
+  </div>
+
+  <!-- WHY -->
+  <h2>Why the miss triggers the agent</h2>
+  <div class="card">
+    <p>The <code>dtc_sale</code> books a GST-inclusive gross split into net revenue + output GST. To split it, the rule needs the <b>rate</b>:</p>
+    <div class="calc">net = gross × 100/(100+rate)      gst = gross − net
+with rate=5:  net = 386158×100/105 = 367769   gst = 18389   ✓ (367769+18389 = 386158)
+with rate="": <span class="bad">cannot divide — no rate → the rule REFUSES (returns ok=false, "missing gst_rate")</span></div>
+    <p>That <code>ok=false</code> is the <b>only</b> trigger. The rule never guesses a rate. The orchestrator then asks the agent, which fetches the order, recovers <code>rate=5</code>, and returns the SAME <code>{dtc_sale, params}</code> the rule would have produced — so the booked entry is byte-identical to truth.</p>
+    <table>
+      <tr><th>Path</th><th>classify.Classify(ev)</th><th>Result</th></tr>
+      <tr><td>rate present</td><td>matches → ok=true</td><td>rule books it directly (no agent)</td></tr>
+      <tr><td>rate stripped</td><td>MISS → ok=false</td><td>agent recovers rate → books it (or escalates → skip)</td></tr>
+    </table>
+  </div>
+
+  <p class="small" style="margin-top:26px">close-agent · numbers match <code>config/playbook.json</code>, <code>internal/classify</code>, and <code>worlds/dtc/2026-04</code> · open in a browser</p>
+</div>
+
+<script>
+// ---- chart of accounts (from config/playbook.json) ----
+const ACCOUNTS = {
+  assets: [["assets/bank","linked; reconciles to bank feed"],["assets/razorpay-settlement-receivable","Razorpay owes us; clears ~0"]],
+  liabilities: [["liabilities/gst-output-payable","GST collected from customers"],["liabilities/dispute-reserve","reserve vs open disputes"]],
+  income: [["income/product-sales","net product revenue"],["income/shipping-revenue","shipping charged"],["income/sales-returns","contra-revenue (refunds)"]],
+  expense: [["expense/processor-fees","Razorpay fee"],["expense/gst-input","GST on fee, recoverable"],["expense/chargeback-loss","lost-dispute loss"]],
+};
+// dtc_sale posting for our example (paise)
+const POST = [
+  {account:"assets/razorpay-settlement-receivable", side:"Dr", amt:"3,861.58"},
+  {account:"income/product-sales",                  side:"Cr", amt:"3,677.69"},
+  {account:"liabilities/gst-output-payable",        side:"Cr", amt:"183.89"},
+];
+
+function renderCoA(){
+  const el=document.getElementById('coa'); el.innerHTML='';
+  for(const grp of ["assets","liabilities","income","expense"]){
+    const d=document.createElement('div'); d.className='grp '+grp;
+    d.innerHTML=`<h4>${grp}</h4>`;
+    for(const [path,note] of ACCOUNTS[grp]){
+      const short=path.split('/')[1];
+      d.innerHTML+=`<div class="acct" data-acct="${path}"><span class="side"></span><span class="nm">${short}</span><span class="amt"></span></div>`;
+    }
+    el.appendChild(d);
+  }
+}
+function postToCoA(){
+  for(const p of POST){
+    const node=document.querySelector(`.acct[data-acct="${p.account}"]`);
+    if(!node) continue;
+    node.classList.add('hit', p.side.toLowerCase());
+    node.querySelector('.side').textContent=p.side;
+    node.querySelector('.amt').textContent='₹'+p.amt;
+  }
+  const bl=document.getElementById('balLine');
+  bl.className='bal ok';
+  bl.textContent='ΣDr 3,861.58  =  ΣCr (3,677.69 + 183.89 = 3,861.58)  ✓ balanced — ledger accepts the post';
+}
+function clearCoA(){
+  document.querySelectorAll('.acct').forEach(n=>{n.className='acct';n.querySelector('.side').textContent='';n.querySelector('.amt').textContent='';});
+  const bl=document.getElementById('balLine'); bl.className='bal'; bl.textContent='— not posted yet —';
+}
+
+// ---- timeline ----
+const STAGES=[
+  {id:'ingest',t:'ingest',d:'read fixtures'},
+  {id:'normalize',t:'normalize',d:'→ event'},
+  {id:'classify',t:'classify',d:'rules'},
+  {id:'post',t:'post',d:'ledger'},
+];
+let ratePresent=true, idx=-1, branched=false;
+
+function renderTL(){
+  const el=document.getElementById('timeline'); el.innerHTML='';
+  STAGES.forEach((s,i)=>{
+    const wrap=document.createElement('div'); wrap.className='stage'; wrap.id='stg-'+s.id;
+    wrap.innerHTML=`<div class="box"><div class="t">${s.t}</div><div class="d">${s.d}</div></div>`+
+      (i<STAGES.length-1?'<div class="arrow">→</div>':'');
+    el.appendChild(wrap);
+  });
+}
+function setRate(present){
+  ratePresent=present;
+  document.querySelectorAll('#rateToggle button')[0].classList.toggle('on',present);
+  document.querySelectorAll('#rateToggle button')[1].classList.toggle('on',!present);
+  document.getElementById('rateField').innerHTML = present
+    ? '<b style="color:var(--green)">"5"</b>' : '<span class="strip">"" (stripped)</span>';
+  resetTL();
+}
+function resetTL(){
+  idx=-1; branched=false;
+  renderTL(); clearCoA();
+  document.getElementById('agentBox').className='agentbox off';
+  document.getElementById('agentDetail').textContent='idle (no miss yet)';
+  document.getElementById('stepBtn').disabled=false;
+  document.getElementById('modeNote').textContent = ratePresent
+    ? 'rate present → the rule will book it directly, no agent.'
+    : 'rate stripped → the rule will MISS and hand this event to the agent.';
+  narrate('Press <b>▶ Step</b> to advance the event through the pipeline.');
+}
+function narrate(html){ document.getElementById('narration').innerHTML=html; }
+
+function step(){
+  // classify branch handling: when at classify with stripped rate, do the agent detour
+  if(idx>=0 && STAGES[idx].id==='classify' && !ratePresent && !branched){
+    branched=true;
+    const ab=document.getElementById('agentBox'); ab.className='agentbox active';
+    document.getElementById('agentDetail').innerHTML='fetched order_SabVgcKXqe0eqv via <code>orders.fetch</code> → recovered <b>rate=5</b> → returns <code>{dtc_sale, gross 3861.58, net 3677.69, gst 183.89}</code>';
+    narrate('<b>Rule MISS</b> — "missing gst_rate". The orchestrator consults the <b>§8 classify agent</b> for THIS event. It recovers the rate from the order and returns <code>{entry_type, params}</code> — never raw debits/credits.');
+    return;
+  }
+  idx++;
+  if(idx>=STAGES.length){ document.getElementById('stepBtn').disabled=true; return; }
+  // mark states
+  STAGES.forEach((s,i)=>{
+    const node=document.getElementById('stg-'+s.id);
+    node.className='stage'+(i<idx?' done':'')+(i===idx?' active':'');
+  });
+  const s=STAGES[idx];
+  if(s.id==='ingest') narrate('<b>ingest</b>: the period\'s 4 Razorpay JSON files are read. orders.json is read too, but only as a recovery source.');
+  else if(s.id==='normalize') narrate('<b>normalize</b>: the raw payment becomes one event in the time-ordered journal (amount 3861.58, gst_rate '+(ratePresent?'"5"':'"" ')+').');
+  else if(s.id==='classify'){
+    if(ratePresent) narrate('<b>classify</b>: the rule has the rate → splits the GST → matches <code>dtc_sale</code>. <span class="ok">ok=true</span>. No agent needed.');
+    else narrate('<b>classify</b>: no rate → the rule cannot split GST. Press <b>▶ Step</b> again to see the MISS hand off to the agent.');
+  }
+  else if(s.id==='post'){
+    postToCoA();
+    const via = ratePresent ? 'the rule' : 'the agent\'s recovered params';
+    narrate('<b>post</b>: the orchestrator derives IK=<code>sale:pay_XWY8…</code>, binds '+via+' through the balance-or-reject ledger, and it lands in the chart of accounts →');
+    if(!ratePresent){ document.getElementById('agentBox').classList.remove('active'); document.getElementById('agentBox').classList.add('off'); }
+  }
+}
+
+renderCoA(); renderTL(); resetTL();
+</script>
+</body>
+</html>

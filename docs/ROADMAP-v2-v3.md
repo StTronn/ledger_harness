@@ -148,3 +148,60 @@ Don't lose these — they're why the above is additive rather than a rewrite:
 - `truth/`, `errors.json`, trace seams isolated and frozen.
 - Data-driven playbook (machine-editable by the future learner).
 - Channel-segmentable income tree; integer-paise money; idempotent, pure reports.
+
+---
+
+## 7. The §8 agent seam: execution models & hardening (design notes)
+
+Captured from the post-Phase-8 design discussion. The first item (async classify)
+is BUILT; the rest are designed but not all built.
+
+### 7.1 Asynchronous execution (BUILT for classify)
+
+The agent need not run inline. The close is split at the agent boundary into stages
+joined by KEYED stores (keyed by `event_id` / `break_key`):
+
+```
+close --agent off  → books the bulk, PARKS its skips → proposals.json   (front door)
+classify work      → async worker (the agent) processes the queue → results.json
+classify apply     → validate → review → derive → post → reconcile → score
+```
+
+- **The keyed store is the determinism anchor:** APPLY only does a keyed lookup, so
+  HOW/WHEN the worker ran (sync, async, concurrent, batched, remote) never changes
+  the booked result. Same results in → byte-identical books out.
+- `close --agent off` is the front door, not a throwaway baseline: the events it
+  cannot book ARE the work queue.
+- Built in `internal/classifyq` (stores, stub worker, validator, reviewer) +
+  `closer.RunApply`. Investigate is still sync-only — same pattern applies later.
+
+### 7.2 Numeric-surface hardening (BUILT for async classify)
+
+The agent must emit **recovered FACTS, not money**. The worker returns the
+`gst_rate` (a value from a closed slab set {5,12,18}); the APPLY stage DERIVES
+`net`/`gst` via the canonical `gstsplit`. The agent has no channel to inject an
+arbitrary rupee value. (The sync path still takes full params — fold this in there
+too when the live brain lands.)
+
+### 7.3 Provenance citations + re-verifying Validator (BUILT for async classify)
+
+Every recovered fact carries a machine-checkable citation `{tool, object, path}`
+(e.g. `orders.fetch / order_X / notes.gst_rate`). At APPLY the Validator RE-READS
+that exact field from the snapshot and confirms the value (and that it's a real
+slab). A fabricated value needs a fabricated citation, which the re-read catches →
+rejected, skipped, never posted. Strongest form (future): the agent may only emit
+values that are *references* into tool outputs, never literals.
+
+### 7.4 Human review gate (seam BUILT, UI later)
+
+A `Reviewer` seam sits AFTER the Validator and BEFORE posting: `auto` (approve all,
+default), `recorded` (replay committed verdicts, fail-closed, CI/audit), and a
+future `interactive` (CLI/web). Verdicts (approve/edit/reject + who/when) are gold
+training data for the v3a learner and form the audit trail (v2d).
+
+### 7.5 Debt to pay before extending
+
+`closer.RunWith` (sync) and `closer.RunApply` (async) duplicate ~70% of the spine;
+they differ only in HOW a rule miss is resolved (inline agent vs results lookup).
+Factor a single `runCore` + a pluggable `MissResolver` so sync/async/investigate
+share one spine and one set of invariants.

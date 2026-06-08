@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>close-agent · Reconciliation explainer</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a23; --panel2:#1e222e; --ink:#e7e9ee; --muted:#9aa3b2;
+    --line:#2a2f3d; --green:#3ecf8e; --red:#ff6b6b; --amber:#ffc857; --blue:#5aa9ff;
+    --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}
+  .wrap{max-width:920px;margin:0 auto;padding:40px 22px 90px}
+  h1{font-size:30px;margin:0 0 6px;letter-spacing:-.5px}
+  h2{font-size:22px;margin:46px 0 10px;letter-spacing:-.3px}
+  h3{font-size:17px;margin:26px 0 8px}
+  .sub{color:var(--muted);margin:0 0 8px}
+  p{margin:10px 0}
+  code,.mono{font-family:var(--mono);font-size:.92em}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:16px 0}
+  .flow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-family:var(--mono);font-size:13px;margin:6px 0}
+  .node{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 11px;white-space:nowrap}
+  .arrow{color:var(--muted)}
+  .tag{display:inline-block;font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+  .tag.raw{color:var(--amber);border-color:#4a3c1c;background:#241d0c}
+  .tag.led{color:var(--blue);border-color:#1c3a4a;background:#0c1a24}
+  table{border-collapse:collapse;width:100%;font-size:14.5px;margin:8px 0}
+  th,td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--muted);font-weight:600}
+  .right{text-align:right;font-family:var(--mono)}
+  .ok{color:var(--green)} .bad{color:var(--red)} .warn{color:var(--amber)} .info{color:var(--blue)}
+  .ledger-row td:first-child{color:var(--muted)}
+  .pill{font-family:var(--mono);font-size:13px;padding:3px 9px;border-radius:6px;display:inline-block}
+  .pill.ok{background:#0e2a1d;border:1px solid #1c5138}
+  .pill.bad{background:#2c1414;border:1px solid #5a2424}
+  .toggle{display:flex;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;width:max-content;margin:4px 0 14px}
+  .toggle button{background:var(--panel2);color:var(--muted);border:0;padding:10px 16px;font:inherit;font-size:14px;cursor:pointer}
+  .toggle button.active{background:var(--green);color:#06281a;font-weight:700}
+  .toggle button.active.bad{background:var(--red);color:#2a0d0d}
+  .bucket-wrap{display:flex;gap:26px;align-items:flex-end;flex-wrap:wrap;margin-top:10px}
+  .bucket{width:120px;height:170px;border:2px solid var(--line);border-top:0;border-radius:0 0 12px 12px;position:relative;background:#10131b}
+  .fill{position:absolute;left:0;right:0;bottom:0;transition:height .5s ease,background .3s;border-radius:0 0 10px 10px}
+  .bucket .lbl{position:absolute;top:-26px;left:0;right:0;text-align:center;font-family:var(--mono);font-size:13px}
+  .legend{font-size:13.5px;color:var(--muted)}
+  .calc{font-family:var(--mono);font-size:14px;white-space:pre;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;margin:10px 0}
+  .check{border-left:4px solid var(--line);padding-left:16px;margin:18px 0}
+  .check.c1{border-color:var(--blue)} .check.c2{border-color:var(--amber)} .check.c3{border-color:var(--green)}
+  .big{font-size:15px}
+  .note{background:#16202c;border:1px solid #1c3a4a;border-radius:10px;padding:14px 16px;margin:14px 0;font-size:14.5px}
+  .keyrow{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px}
+  .keycard{flex:1;min-width:240px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .keycard h4{margin:0 0 6px;font-size:15px}
+  .fixable-y{color:var(--green);font-weight:700}
+  .fixable-n{color:var(--red);font-weight:700}
+  hr{border:0;border-top:1px solid var(--line);margin:30px 0}
+  .small{font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Reconciliation, the receivable, &amp; the Phase&nbsp;8 break</h1>
+  <p class="sub">An interactive walk-through of the three reconcile checks — and why only one of them can be fixed by the agent posting an entry.</p>
+
+  <!-- ============ BIG PICTURE ============ -->
+  <h2>1 · The big picture: three records of the same money</h2>
+  <div class="card">
+    <p>Every rupee shows up in <b>three</b> independent places. Reconciliation proves they agree.</p>
+    <table>
+      <tr><th>Record</th><th>File / source</th><th>What it claims</th></tr>
+      <tr><td><b>Settlements</b> <span class="tag raw">raw</span></td><td><code>razorpay/settlements.json</code></td><td>"I batched these payments &amp; refunds and deposited ₹X to your bank."</td></tr>
+      <tr><td><b>Bank feed</b> <span class="tag raw">raw</span></td><td><code>bank-feed.json</code></td><td>"I (the bank) credited ₹Y on this date." (independent)</td></tr>
+      <tr><td><b>The books</b> <span class="tag led">ledger</span></td><td>posted by <code>closer</code></td><td>The double-entry GL the close produces from events.</td></tr>
+    </table>
+    <p class="small" style="margin-top:14px">Pipeline that builds <b>the books</b>:</p>
+    <div class="flow">
+      <span class="node">refunds.json</span><span class="arrow">→</span>
+      <span class="node">ingest.Normalize</span><span class="arrow">→</span>
+      <span class="node">events</span><span class="arrow">→</span>
+      <span class="node">classify</span><span class="arrow">→</span>
+      <span class="node">ledger.Post</span><span class="arrow">→</span>
+      <span class="node" style="border-color:#1c3a4a;color:var(--blue)">the books</span>
+    </div>
+    <div class="note">
+      <b>The single most important fact:</b> two of the three checks read <span class="tag raw">raw</span> files only.
+      Just one — check&nbsp;#3 — reads <span class="tag led">the ledger</span>. The agent can only change the ledger.
+      So the agent can only ever fix <b>check&nbsp;#3</b>. Hold onto that; everything below leads there.
+    </div>
+  </div>
+
+  <!-- ============ SHARED BATCH ============ -->
+  <h2>2 · One example batch (used everywhere below)</h2>
+  <div class="card">
+    <table>
+      <tr><th>Item</th><th class="right">Amount (₹)</th><th>Note</th></tr>
+      <tr><td>Payment <code>pay_A</code></td><td class="right">1,000</td><td>a sale</td></tr>
+      <tr><td>Payment <code>pay_B</code></td><td class="right">1,000</td><td>a sale</td></tr>
+      <tr><td>Refund <code>rfnd_X</code></td><td class="right">1,000</td><td>full refund of <code>pay_B</code></td></tr>
+      <tr><td>Razorpay fees</td><td class="right">40</td><td>on the batch</td></tr>
+    </table>
+    <p>The seeder computes the <b>actual bank deposit</b> by netting it all out (<code>generate.go</code>):</p>
+    <div class="calc">net_deposit = Σpay − Σrefund − Σfees
+            = 2000  − 1000   −  40
+            = <b>960</b>     ← this number is stored on the settlement</div>
+    <p class="small">So on disk the settlement says: <code>net_deposit = 960</code>, <code>payment_ids = [pay_A, pay_B]</code>, <code>refund_ids = [rfnd_X]</code>, <code>UTR = "UTR_abc"</code>.</p>
+  </div>
+
+  <!-- ============ CHECK 1 ============ -->
+  <h2>3 · The three checks</h2>
+
+  <div class="check c1">
+    <h3><span class="info">Check #1 — Settlement → Bank</span> &nbsp;<span class="tag raw">reads raw only</span></h3>
+    <p><b>"Did the cash actually arrive?"</b> Match each settlement to a bank credit by <code>UTR</code>, then compare amount &amp; date.</p>
+    <div class="calc">settlement setl_1:  net_deposit = 960   UTR = "UTR_abc"   date = May 10
+bank feed:          credit      = 960   ref = "UTR_abc"   date = May 11
+
+match on UTR ✅   amount 960 == 960 ✅   |May10 − May11| = 1d ≤ 3d ✅   → <span class="ok">no break</span></div>
+    <p>Fires if: no matching credit, wrong amount, or the date is outside tolerance. That's a <b>real cash discrepancy</b> — you escalate it; no posting can conjure missing cash.</p>
+  </div>
+
+  <!-- ============ CHECK 2 — interactive ============ -->
+  <div class="check c2">
+    <h3><span class="warn">Check #2 — Batch-sum</span> &nbsp;<span class="tag raw">reads raw only</span></h3>
+    <p><b>"Does the receipt add up?"</b> Ignore the bank entirely. Take the settlement's <i>own</i> listed members and re-derive the deposit. Does it equal the printed total?</p>
+
+    <div class="toggle" id="c2toggle">
+      <button class="active" onclick="setC2(true)">refund_ids = [rfnd_X]  (clean)</button>
+      <button class="bad" onclick="setC2(false)">refund_ids = []  (inject dropped it)</button>
+    </div>
+    <div class="calc" id="c2calc"></div>
+    <p id="c2explain"></p>
+    <div class="note">
+      The inject (<code>injectRefundInBatch</code>) <b>only erases <code>rfnd_X</code> from the list</b> — it never touches <code>net_deposit</code> (still 960).
+      It's like erasing one line item from an itemized receipt but leaving the printed total: now the line items sum to a different number, off by exactly the erased line (the ₹1,000 refund).
+    </div>
+    <p>Fires if the member list doesn't reconstruct the deposit. That's a <b>raw-data inconsistency</b> — you fix it by correcting the batch list, <b>not</b> by posting to the ledger (posting can't change <code>settlements.json</code>).</p>
+  </div>
+
+  <!-- ============ CHECK 3 — interactive ============ -->
+  <div class="check c3">
+    <h3><span class="ok">Check #3 — Receivable-clears</span> &nbsp;<span class="tag led">reads the ledger</span></h3>
+    <p><b>"Did the money in flight land?"</b> The <code>assets/razorpay-settlement-receivable</code> account is a temporary bucket — money customers paid that Razorpay hasn't deposited yet. It should drain to ~0 by period end.</p>
+
+    <table>
+      <tr><th>Event</th><th>Effect on receivable</th><th>Why</th></tr>
+      <tr><td>sale (payment)</td><td class="ok">+gross  (Dr)</td><td>customer paid; Razorpay owes you</td></tr>
+      <tr><td>refund_reversal</td><td class="bad">−refundGross (Cr)</td><td>that money won't be deposited; remove it</td></tr>
+      <tr><td>settlement</td><td class="bad">−(gross − refunds) (Cr)</td><td>Razorpay deposited it; bucket drains</td></tr>
+    </table>
+
+    <p style="margin-top:18px">Toggle whether the refund got <b>booked</b> into the ledger and watch the bucket:</p>
+    <div class="toggle" id="c3toggle">
+      <button class="active" onclick="setC3(true)">refund booked  (clean)</button>
+      <button class="bad" onclick="setC3(false)">refund NOT booked  (Phase 8 break)</button>
+    </div>
+
+    <div class="bucket-wrap">
+      <div style="text-align:center">
+        <div class="bucket">
+          <div class="lbl">receivable</div>
+          <div class="fill" id="bucketFill"></div>
+        </div>
+      </div>
+      <div style="flex:1;min-width:280px">
+        <div class="calc" id="c3calc"></div>
+        <div id="c3status"></div>
+      </div>
+    </div>
+    <p style="margin-top:16px" id="c3explain"></p>
+  </div>
+
+  <!-- ============ WHY ONLY #3 ============ -->
+  <h2>4 · Why only check #3 is fixable by the agent</h2>
+  <div class="card">
+    <p>The agent's <b>only</b> lever is returning <code>{entry_type, params}</code> that the Go ledger validates and posts (SPEC §8). Posting changes <b>the ledger</b>. Only check #3 <i>reads</i> the ledger. Therefore:</p>
+    <table>
+      <tr><th>Check</th><th>The issue it raises</th><th>Posting fixes it?</th></tr>
+      <tr><td class="info">#1 settlement→bank</td><td>cash missing / wrong amount / wrong date</td><td class="fixable-n">No → escalate (real cash gap)</td></tr>
+      <tr><td class="warn">#2 batch-sum</td><td>member list doesn't sum to deposit</td><td class="fixable-n">No → correct raw batch data</td></tr>
+      <tr><td class="ok">#3 receivable-clears</td><td>something <b>settled-but-not-booked</b></td><td class="fixable-y">Yes → book the missing entry</td></tr>
+    </table>
+    <div class="note" style="background:#0e2a1d;border-color:#1c5138">
+      <b>The chain that makes Phase&nbsp;8 work:</b>
+      <div class="calc" style="background:#0c1f16;border-color:#1c5138;margin-top:8px">investigate books the missing refund_reversal
+   → posts  Cr receivable −1000
+   → receivable: +1000 − 1000 = 0
+   → re-run check #3:  0 == 0  ✅ break clears
+   → that refund_reversal now matches truth  ✅ score rises to 100%</div>
+    </div>
+  </div>
+
+  <!-- ============ THE DECISION ============ -->
+  <h2>5 · The Phase 8 decision (what I'm asking you)</h2>
+  <div class="card">
+    <p>Today's <code>--inject refund-in-batch</code> produces a <b>check #2</b> break, and the refund <b>stays booked</b> (score already 100%). So the handover's goal — "investigate <b>adds a posting</b> → reconcile passes → <b>score rises</b>" — is structurally impossible with that break (check #2 can't be cleared by posting, and re-booking an already-booked refund would double-count).</p>
+    <div class="keyrow">
+      <div class="keycard" style="border-color:#1c5138">
+        <h4 class="ok">Option 1 — recommended</h4>
+        <p class="small">Seed a refund the deterministic close <b>can't book</b> (incomplete tax metadata — the §1/§2 long-tail). It surfaces as a <b>check #3</b> residual. Investigate recovers the rate from <code>orders.json</code> + the id/amount from <code>refunds.json</code>, books the <code>refund_reversal</code>.</p>
+        <p class="small"><span class="ok">→ receivable clears, reconcile passes, score 100%.</span> Faithful to SPEC §7#3 "settled-but-not-booked" and the §8 "postings to add" contract. Single clean break.</p>
+      </div>
+      <div class="keycard">
+        <h4 class="warn">Option 2 — literal handover</h4>
+        <p class="small">Keep today's <b>check #2</b> break (refund stays booked). Investigate returns an <b>empty</b> postings list + a batch correction; reconcile passes on re-check.</p>
+        <p class="small"><span class="bad">→ no posting added, score stays 100% (no rise).</span></p>
+      </div>
+      <div class="keycard">
+        <h4 class="info">Option 3 — both</h4>
+        <p class="small">Seed both a check #3 (posting-resolvable) and a check #2 (data-correction) break to show both paths. More fixtures, more closer complexity.</p>
+      </div>
+    </div>
+  </div>
+
+  <p class="small" style="margin-top:30px">close-agent · open this file in a browser · all numbers match <code>internal/reconcile/*</code> and <code>internal/seed/*</code></p>
+
+</div>
+
+<script>
+  // ---------- Check #2 ----------
+  function setC2(clean){
+    const btns=document.querySelectorAll('#c2toggle button');
+    btns[0].classList.toggle('active',clean); btns[1].classList.toggle('active',!clean);
+    const calc=document.getElementById('c2calc'), ex=document.getElementById('c2explain');
+    if(clean){
+      calc.innerHTML=
+`Expected = Σpay − Σrefund − Σfees
+         = 2000 −  1000  −  40
+         = 960
+
+Actual   = net_deposit = 960
+
+960 == 960   <span class="ok">✅ no break</span>`;
+      ex.innerHTML='The member list reconstructs the stored deposit exactly. Consistent.';
+    } else {
+      calc.innerHTML=
+`Expected = Σpay − Σrefund − Σfees
+         = 2000 −   0    −  40       <span class="warn">← refund dropped, so NOT subtracted</span>
+         = 1960                      <span class="warn">← jumps UP by 1000</span>
+
+Actual   = net_deposit = 960         <span class="warn">← unchanged by the inject</span>
+
+1960 ≠ 960   <span class="bad">❌ BREAK</span>
+Expected − Actual = <b>1000</b>  = the dropped refund's amount`;
+      ex.innerHTML='The list now claims there was no refund, so the re-derived deposit is ₹1,000 too high — off by exactly the refund that was erased from the list.';
+    }
+  }
+
+  // ---------- Check #3 ----------
+  function setC3(booked){
+    const btns=document.querySelectorAll('#c3toggle button');
+    btns[0].classList.toggle('active',booked); btns[1].classList.toggle('active',!booked);
+    const calc=document.getElementById('c3calc'), st=document.getElementById('c3status'),
+          ex=document.getElementById('c3explain'), fill=document.getElementById('bucketFill');
+    if(booked){
+      calc.innerHTML=
+`sales:            +1000 +1000   = +2000
+refund_reversal:  −1000          = −1000
+settlement:       −(2000−1000)   = −1000
+                                 ──────
+receivable balance               =    <b>0</b>`;
+      st.innerHTML='<span class="pill ok">balance 0 == in-transit 0  →  ✅ clears, no break</span>';
+      ex.innerHTML='Every sale that went in (+) was removed by either the refund or the settlement (−). The bucket empties. Healthy close.';
+      fill.style.height='2%'; fill.style.background='var(--green)';
+    } else {
+      calc.innerHTML=
+`sales:            +1000 +1000   = +2000
+refund_reversal:  (NOT booked)   =     0   <span class="bad">← skipped, no offsetting credit</span>
+settlement:       −(2000−1000)   = −1000   <span class="small">(deposit still reduced by refund)</span>
+                                 ──────
+receivable balance               = <b>+1000</b>`;
+      st.innerHTML='<span class="pill bad">balance 1000 ≠ in-transit 0  →  ❌ BREAK (residual 1000)</span>';
+      ex.innerHTML='The settlement drained only −1000 (the bank really did deposit less, because of the refund), but nothing removed the other −1000 the refund_reversal should have. ₹1,000 is stranded. <b>Investigate books the missing refund_reversal → Cr receivable −1000 → bucket empties → break clears → score rises.</b>';
+      fill.style.height='60%'; fill.style.background='var(--red)';
+    }
+  }
+
+  setC2(true); setC3(true);
+</script>
+</body>
+</html>

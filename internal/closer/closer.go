@@ -90,7 +90,12 @@ type Result struct {
 	Traces     []agentclient.Trace // FROZEN agent traces, one per agent consultation (SPEC §9, §13)
 	TracePath  string              // path the trace artifact was written to (empty if none)
 	Skipped    []Skip
-	Breaks     []reconcile.Break // SPEC §7 breaks left UNRESOLVED after investigate (empty = fully reconciled)
+	// ProposalsPath is where the close PARKED the events it could not book — the
+	// async classify work queue (SPEC §8 async seam). close --agent off emits this
+	// so the classify worker can process the long tail out of band; empty when the
+	// run booked everything (no skips).
+	ProposalsPath string
+	Breaks        []reconcile.Break // SPEC §7 breaks left UNRESOLVED after investigate (empty = fully reconciled)
 	// Investigate seam (Phase 8, SPEC §7, §8). InvestigateDone is the number of
 	// breaks the §8 investigate agent resolved by posting; Escalations lists the
 	// breaks it (or the agent-off baseline) left for a human, with reasons;
@@ -220,6 +225,20 @@ func RunWith(root, world, period string, opts Options) (Result, error) {
 			return Result{}, err
 		}
 		res.TracePath = tp
+	}
+
+	// Park the events this run could NOT book (rule misses the agent didn't handle,
+	// or agent escalations) as the async classify WORK QUEUE (SPEC §8 async seam).
+	// close --agent off is the front door of the async flow: it books what it can
+	// and emits proposals.json so the classify worker can process the long tail out
+	// of band; `classify apply` later merges the worker's answers back in. A run that
+	// booked everything writes no queue.
+	if len(skippedEvents) > 0 {
+		pp, err := writeProposalsQueue(root, world, period, res.Skipped, eventByID)
+		if err != nil {
+			return Result{}, err
+		}
+		res.ProposalsPath = pp
 	}
 
 	// Reconcile (SPEC §5, §7): after every event has posted, run the three checks
