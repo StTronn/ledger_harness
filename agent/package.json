@@ -1,0 +1,19 @@
+{
+  "name": "close-agent-flue",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Flue/LLM agent CLI for close-agent: classify + investigate, behind the §8 seam (recorded-response-first; runs deterministically with no key)",
+  "bin": {
+    "flue-agent": "./bin/flue-agent"
+  },
+  "scripts": {
+    "agent": "node --experimental-strip-types src/main.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "//deps": "The deterministic default brain needs NO dependencies (runs on Node >=22 strip-types). The live Flue/LLM brain is lazily imported only with --live; enable it with: pnpm add flue @ai-sdk/anthropic",
+  "devDependencies": {
+    "@types/node": "^22.19.20",
+    "typescript": "^5.9.3"
+  }
+}
