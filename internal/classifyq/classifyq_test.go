@@ -26,7 +26,7 @@ func TestWorkerProposesWithProvenance(t *testing.T) {
 	if !pay.Proposed() || pay.EntryType != "dtc_sale" {
 		t.Fatalf("payment should propose a dtc_sale, got %+v", pay)
 	}
-	rec, ok := findRecovered(pay, "gst_rate")
+	rec, ok := findRecoveredIn(pay.Recovered, "gst_rate")
 	if !ok || rec.Value != "5" || rec.Source.Object != "order_1" || rec.Source.Path != "notes.gst_rate" {
 		t.Errorf("missing/incorrect provenance citation: %+v", pay.Recovered)
 	}

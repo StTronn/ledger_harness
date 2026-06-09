@@ -108,6 +108,16 @@ func RunApply(root, world, period string, opts ApplyOptions) (Result, error) {
 	}
 	res.Breaks = reconcile.Reconcile(er.reconcileInput(periodEnd))
 
+	// Park any remaining breaks as the async investigate queue (classify apply does
+	// not resolve breaks; investigate is a separate stage).
+	if len(res.Breaks) > 0 {
+		bp, err := writeBreaksQueue(root, world, period, res.Breaks, summarizeEvents(er.skippedEvents))
+		if err != nil {
+			return Result{}, err
+		}
+		res.BreaksPath = bp
+	}
+
 	sc, rec, path, err := scoreAndWrite(root, world, period, res.Produced)
 	if err != nil {
 		return Result{}, err
@@ -205,7 +215,15 @@ func deriveParams(ev ingest.NormalizedEvent, entryType string, rate int) (map[st
 			"gst":        gst,
 			"payment_id": money.FromPaise(0),
 		}, nil
+	case "refund_reversal":
+		// The refund's gross is its event amount; split it at the recovered rate.
+		net, gst := gstsplit.SplitInclusive(ev.Amount, rate)
+		return map[string]money.Money{
+			"net":       net,
+			"gst":       gst,
+			"refund_id": money.FromPaise(0),
+		}, nil
 	default:
-		return nil, fmt.Errorf("entry type %q is not supported by the v1 async classify apply", entryType)
+		return nil, fmt.Errorf("entry type %q is not supported by the v1 async apply", entryType)
 	}
 }

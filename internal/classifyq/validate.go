@@ -28,31 +28,41 @@ var gstSlabs = map[int]bool{5: true, 12: true, 18: true}
 // rates is re-read by the caller from orders.json at APPLY time, so this is a fresh,
 // independent check of the worker's claim — never a trust of the stored value.
 func ValidateRate(r Result, rates map[string]string) (int, error) {
-	rec, ok := findRecovered(r, "gst_rate")
+	return ValidateRecoveredRate(r.EventID, r.Recovered, rates)
+}
+
+// ValidateRecoveredRate re-verifies a gst_rate citation carried by any list of
+// recovered facts (used by both the classify Result and an investigate resolution
+// posting) against the snapshot rates, returning the validated integer rate. label
+// names the thing being validated for error messages. The checks are identical to
+// ValidateRate: the citation must exist, cite notes.gst_rate of a known order, match
+// what the order actually holds, and be a valid GST slab.
+func ValidateRecoveredRate(label string, recovered []Recovered, rates map[string]string) (int, error) {
+	rec, ok := findRecoveredIn(recovered, "gst_rate")
 	if !ok {
-		return 0, fmt.Errorf("result for %s has no gst_rate citation", r.EventID)
+		return 0, fmt.Errorf("%s has no gst_rate citation", label)
 	}
 	if rec.Source.Path != "notes.gst_rate" {
-		return 0, fmt.Errorf("result for %s cites unsupported source path %q", r.EventID, rec.Source.Path)
+		return 0, fmt.Errorf("%s cites unsupported source path %q", label, rec.Source.Path)
 	}
 	actual, ok := rates[rec.Source.Object]
 	if !ok {
-		return 0, fmt.Errorf("result for %s cites order %q which is not in the snapshot", r.EventID, rec.Source.Object)
+		return 0, fmt.Errorf("%s cites order %q which is not in the snapshot", label, rec.Source.Object)
 	}
 	if actual != rec.Value {
 		return 0, fmt.Errorf("citation mismatch for %s: claims gst_rate=%q but order %s holds %q",
-			r.EventID, rec.Value, rec.Source.Object, actual)
+			label, rec.Value, rec.Source.Object, actual)
 	}
 	n, ok := parseSlab(rec.Value)
 	if !ok {
-		return 0, fmt.Errorf("result for %s recovered gst_rate %q which is not a valid GST slab", r.EventID, rec.Value)
+		return 0, fmt.Errorf("%s recovered gst_rate %q which is not a valid GST slab", label, rec.Value)
 	}
 	return n, nil
 }
 
-// findRecovered returns the recovered fact for the given field, if present.
-func findRecovered(r Result, field string) (Recovered, bool) {
-	for _, rec := range r.Recovered {
+// findRecoveredIn returns the recovered fact for the given field from a list.
+func findRecoveredIn(recovered []Recovered, field string) (Recovered, bool) {
+	for _, rec := range recovered {
 		if rec.Field == field {
 			return rec, true
 		}

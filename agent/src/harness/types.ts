@@ -67,3 +67,58 @@ export interface ResultsFile {
 }
 
 export const SchemaVersion = 1;
+
+// ---- investigate stores (mirror classifyq.investigate + agentclient.BreakSummary) ----
+
+// BreakSummary mirrors agentclient.BreakSummary — one reconcile break. expected/actual
+// are integer paise.
+export interface BreakSummary {
+  key: string;
+  check: number; // 1|2|3
+  kind: string; // settlement-bank-mismatch | batch-sum-mismatch | receivable-residual
+  settlement_id?: string;
+  expected: number;
+  actual: number;
+  candidates: string[];
+  detail: string;
+}
+
+// BreakWork mirrors classifyq.BreakWork — a parked break + the candidate events.
+export interface BreakWork {
+  break: BreakSummary;
+  candidates: EventSummary[];
+}
+
+export interface BreaksFile {
+  schema_version: number;
+  world: string;
+  period: string;
+  breaks: BreakWork[];
+}
+
+export const StatusResolved = "resolved";
+
+// ResolutionPosting mirrors classifyq.ResolutionPosting — one {entry_type, recovered}
+// the agent proposes to add (recovered facts + citation, never money).
+export interface ResolutionPosting {
+  event_id: string;
+  entry_type: string;
+  recovered?: Recovered[];
+}
+
+// Resolution mirrors classifyq.Resolution — the agent's answer for one break.
+export interface Resolution {
+  break_key: string;
+  status: string; // resolved | escalated
+  postings?: ResolutionPosting[];
+  tools_used?: string[];
+  rationale?: string;
+  reason?: string;
+}
+
+export interface ResolutionsFile {
+  schema_version: number;
+  world: string;
+  period: string;
+  resolutions: Resolution[];
+}

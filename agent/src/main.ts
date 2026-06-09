@@ -9,6 +9,7 @@
 // runs/<world>-<period>/ and the snapshot under worlds/<world>/<period>/.
 
 import { runClassify } from "./agents/classify.ts";
+import { runInvestigate } from "./agents/investigate.ts";
 
 interface Flags {
   world: string;
@@ -43,8 +44,12 @@ async function main(): Promise<void> {
     return;
   }
   if (cmd === "investigate") {
-    process.stderr.write("flue-agent: investigate is added in the next step\n");
-    process.exit(2);
+    const f = parseFlags(rest);
+    const out = await runInvestigate(f);
+    process.stdout.write(
+      `investigated ${out.resolved} resolved, ${out.escalated} escalated (brain: ${out.brain}) for world "${f.world}" period "${f.period}" -> ${out.path}\n`,
+    );
+    return;
   }
   process.stderr.write("usage: flue-agent <classify|investigate> --world <w> --period <p> [--root <dir>] [--live]\n");
   process.exit(2);

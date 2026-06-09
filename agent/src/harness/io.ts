@@ -4,7 +4,7 @@
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
-import type { ProposalsFile, ResultsFile, Result } from "./types.ts";
+import type { ProposalsFile, ResultsFile, Result, BreaksFile, ResolutionsFile, Resolution } from "./types.ts";
 
 export function runDir(root: string, world: string, period: string): string {
   return join(root, "runs", `${world}-${period}`);
@@ -44,6 +44,28 @@ export function readProposals(root: string, world: string, period: string): Prop
 export function writeResults(root: string, world: string, period: string, file: ResultsFile): string {
   file.results.sort((a: Result, b: Result) => (a.event_id < b.event_id ? -1 : a.event_id > b.event_id ? 1 : 0));
   const path = resultsPath(root, world, period);
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, JSON.stringify(file, null, 2) + "\n", "utf8");
+  return path;
+}
+
+export function breaksPath(root: string, world: string, period: string): string {
+  return join(runDir(root, world, period), "breaks.json");
+}
+export function resolutionsPath(root: string, world: string, period: string): string {
+  return join(runDir(root, world, period), "resolutions.json");
+}
+
+export function readBreaks(root: string, world: string, period: string): BreaksFile {
+  const f = readJSON<BreaksFile>(breaksPath(root, world, period));
+  if (f.schema_version !== 1) throw new Error(`flue-agent: breaks schema_version=${f.schema_version}, want 1`);
+  return f;
+}
+
+// writeResolutions writes the investigate results store (sorted by break_key).
+export function writeResolutions(root: string, world: string, period: string, file: ResolutionsFile): string {
+  file.resolutions.sort((a: Resolution, b: Resolution) => (a.break_key < b.break_key ? -1 : a.break_key > b.break_key ? 1 : 0));
+  const path = resolutionsPath(root, world, period);
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, JSON.stringify(file, null, 2) + "\n", "utf8");
   return path;

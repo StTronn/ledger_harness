@@ -93,6 +93,9 @@ type Result struct {
 	// run booked everything (no skips).
 	ProposalsPath string
 	Breaks        []reconcile.Break // SPEC §7 breaks left UNRESOLVED after investigate (empty = fully reconciled)
+	// BreaksPath is where the close PARKED any unresolved breaks — the async
+	// investigate work queue (breaks.json). Empty when the run fully reconciled.
+	BreaksPath string
 	// Investigate seam (Phase 8, SPEC §7, §8). InvestigateDone is the number of
 	// breaks the §8 investigate agent resolved by posting; Escalations lists the
 	// breaks it (or the agent-off baseline) left for a human, with reasons;
@@ -218,6 +221,16 @@ func RunWith(root, world, period string, opts Options) (Result, error) {
 			return Result{}, err
 		}
 		res.InvestigateTracePath = ip
+	}
+
+	// Park any UNRESOLVED breaks as the async investigate work queue (SPEC §8): the
+	// candidates are the unbooked events the investigate agent inspects.
+	if len(res.Breaks) > 0 {
+		bp, err := writeBreaksQueue(root, world, period, res.Breaks, summarizeEvents(er.skippedEvents))
+		if err != nil {
+			return Result{}, err
+		}
+		res.BreaksPath = bp
 	}
 
 	// Score against truth (scorer-only boundary) + emit the frozen errors.json.
