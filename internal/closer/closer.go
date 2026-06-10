@@ -87,15 +87,7 @@ type Result struct {
 	Traces     []agentclient.Trace // FROZEN agent traces, one per agent consultation (SPEC §9, §13)
 	TracePath  string              // path the trace artifact was written to (empty if none)
 	Skipped    []Skip
-	// ProposalsPath is where the close PARKED the events it could not book — the
-	// async classify work queue (SPEC §8 async seam). close --agent off emits this
-	// so the classify worker can process the long tail out of band; empty when the
-	// run booked everything (no skips).
-	ProposalsPath string
-	Breaks        []reconcile.Break // SPEC §7 breaks left UNRESOLVED after investigate (empty = fully reconciled)
-	// BreaksPath is where the close PARKED any unresolved breaks — the async
-	// investigate work queue (breaks.json). Empty when the run fully reconciled.
-	BreaksPath string
+	Breaks     []reconcile.Break // SPEC §7 breaks left UNRESOLVED after investigate (empty = fully reconciled)
 	// Investigate seam (Phase 8, SPEC §7, §8). InvestigateDone is the number of
 	// breaks the §8 investigate agent resolved by posting; Escalations lists the
 	// breaks it (or the agent-off baseline) left for a human, with reasons;
@@ -187,17 +179,6 @@ func RunWith(root, world, period string, opts Options) (Result, error) {
 		res.TracePath = tp
 	}
 
-	// Park the events this run could NOT book as the async classify WORK QUEUE (SPEC
-	// §8): close --agent off is the front door of the async flow — its skips become
-	// proposals.json for the classify worker. A run that booked everything writes none.
-	if len(er.skippedEvents) > 0 {
-		pp, err := writeProposalsQueue(root, world, period, res.Skipped, er.eventByID)
-		if err != nil {
-			return Result{}, err
-		}
-		res.ProposalsPath = pp
-	}
-
 	// Reconcile (SPEC §5, §7) over the posted ledger + raw records.
 	periodEnd, err := nextMonthFirst(period)
 	if err != nil {
@@ -221,16 +202,6 @@ func RunWith(root, world, period string, opts Options) (Result, error) {
 			return Result{}, err
 		}
 		res.InvestigateTracePath = ip
-	}
-
-	// Park any UNRESOLVED breaks as the async investigate work queue (SPEC §8): the
-	// candidates are the unbooked events the investigate agent inspects.
-	if len(res.Breaks) > 0 {
-		bp, err := writeBreaksQueue(root, world, period, res.Breaks, summarizeEvents(er.skippedEvents))
-		if err != nil {
-			return Result{}, err
-		}
-		res.BreaksPath = bp
 	}
 
 	// Score against truth (scorer-only boundary) + emit the frozen errors.json.

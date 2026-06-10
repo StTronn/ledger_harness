@@ -1,7 +1,7 @@
 # close-agent — Build Handover / Resume State
 
 > **Read this first if you're resuming the build.** It captures what's done, the locked decisions, how the work is being executed, how to verify it, and the exact next task. Pairs with `docs/SPEC.md` (the v1 design, source of truth) and `docs/ROADMAP-v2-v3.md` (post-v1 growth).
-> **Last updated at:** Phase 8 complete (the `investigate` agent — Go side, record/replay).
+> **Last updated at:** v1 simplified to the SYNCHRONOUS core — the deterministic spine + the two agent seams (classify + investigate), `--agent off|replay|live`, record/replay. The async pipeline, human-review gate, provenance/validator, and the TS `flue-agent` CLI we prototyped are preserved on the **`v2-preview` branch** (not on main).
 
 ---
 
@@ -18,8 +18,8 @@
 | 6 | Scorer + reports CLI + frozen `errors.json` ⭐ deterministic product complete | ✅ committed `3a2e194` |
 | 7a | Agent seam (Go side): long tail, `orders.json`, record/replay, traces | ✅ committed `7b49ba6` |
 | 8 | `investigate` agent (resolve reconcile breaks), Go side record/replay | ✅ done |
-| 8.5 | Async classify pipeline (`classify work`/`apply`) + provenance citations + re-verifying validator + review seam; `close --agent off` parks the queue | ✅ done (see §9 + ROADMAP §7) |
-| **7b** | **Flue TS `classify` service (live agent behind §8)** | **⏭ DO THIS NEXT** |
+| **7b** | **Flue `classify`/`investigate` live agent behind §8** | **⏭ DO THIS NEXT** (recorded/live Go seam exists; a CLI prototype lives on `v2-preview`) |
+| (v2) | Async pipeline · human-review gate · provenance/validator · TS `flue-agent` CLI | ⏸ prototyped, parked on the **`v2-preview`** branch (see ROADMAP §7) |
 | 9 | (optional) light live Razorpay test-mode seeding | not started |
 | 10 | (optional) polish: audit trail, nicer output | not started |
 
@@ -163,29 +163,21 @@ scheme.
 
 Stand up the Flue TS service implementing §8 `classify` (and later `investigate`): `createAgent({ model: 'anthropic/...', instructions, tools, skills })`, `session.prompt(input, {result: schema})` for `{entry_type, params, rationale}`. Generate `SKILL.md` from `config/playbook.json` (so playbook and skill can't drift). Read-only tools (`getOrder`/`getPayment`) call a Go read API over snapshotted fixtures. Flue auto-exposes `POST /agents/<name>/<id>`; `agentclient` live mode posts there and records responses for replay. **Verification under recorded-only:** build/typecheck + confirm the §8 request/response shape and that live→record reproduces the committed fixtures; classification *quality* needs a live key (non-CI eval), which is out of CI scope. Note: the Go-centric `close-agent-phase` workflow is Go-shaped — for the TS service, either pass TS-specific instructions/gate in the phase args or build it with direct agents using a TS gate (`npm i`, `tsc`, `flue build`).
 
-## 9. Async classify pipeline (Phase 8.5, done — beyond the original plan)
+## 9. v2-preview branch (async / review / provenance / TS agent — parked)
 
-The classify agent can now run ASYNCHRONOUSLY, decoupled from the close, with the
-§8 surface hardened. Full design in `docs/ROADMAP-v2-v3.md` §7. Shape:
+v1 (main) is deliberately the **synchronous** product: `close --agent off|replay|live`,
+one pass, two seams. While exploring, we prototyped a larger surface and **parked it
+on the `v2-preview` branch** so main stays simple:
 
-```
-close --agent off  → books the bulk, PARKS its skipped events as runs/<w-p>/proposals.json (the queue)
-classify work      → async worker (stub brain): proposals.json -> results.json  (recover rate, CITE the source)
-classify apply     → validate citation -> review -> derive money (gstsplit) -> Bind+Post -> reconcile -> score
-```
+- **Async pipeline** — `close --agent off` parks a work queue; a worker processes it;
+  an apply stage books it. Decoupled via keyed stores (`internal/classifyq`).
+- **Human-review gate** — a `Reviewer` seam (auto / recorded) between the agent and
+  the ledger.
+- **Provenance + validator** — the agent emits a recovered fact + a `{object,path}`
+  citation; the apply stage re-reads the cited snapshot field to verify it, and
+  derives the money itself (the agent never emits rupees).
+- **TS `flue-agent` CLI** (`agent/`) — the agent as a Node/TS command (deterministic
+  brain + a lazy Flue/LLM `--live` slot), running both seams over the keyed stores.
 
-- `internal/classifyq`: keyed stores (`proposals.json`/`results.json`), stub-brain
-  worker (`classifyOne` is the slot the live LLM replaces), `ValidateRate`
-  (re-reads the cited `orders.json` field — rejects forged/stale citations + non-slab
-  rates), `Reviewer` seam (`AutoReviewer` default, `RecordedReviewer` fail-closed).
-- `closer.RunWith` now parks skips → `proposals.json` (via `writeProposalsQueue`);
-  `closer.RunApply` is the APPLY stage (option A: re-close that books parked misses
-  from `results.json`). The agent emits the RATE only; APPLY derives net/gst.
-- CLI: `classify work` + `classify apply` (the queue comes from `close --agent off`).
-- Gates: `2026-04` off=87% (parks 5) → work → apply=100%, byte-deterministic; a
-  forged citation is rejected by the validator (skipped, score drops); recorded
-  reviewer reject skips a valid proposal. truth-isolation green (classifyq clean).
-
-**Known debt (do before extending — see ROADMAP §7.5):** `RunWith`/`RunApply`
-duplicate ~70% of the spine; factor `runCore` + a pluggable `MissResolver`. The
-investigate agent is still sync-only and not yet provenance/validator-hardened.
+Design notes: `docs/ROADMAP-v2-v3.md` §7. To revisit: `git checkout v2-preview`.
+None of it is needed for the v1 deterministic close; it's v2/v3 growth.

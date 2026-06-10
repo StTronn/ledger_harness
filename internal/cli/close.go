@@ -78,12 +78,6 @@ func printCloseResult(out io.Writer, world, period string, res closer.Result) {
 	for _, s := range res.Skipped {
 		fmt.Fprintf(out, "    - %s %s: %s\n", s.Type, s.EventID, s.Reason)
 	}
-	// The skipped events are PARKED as the async classify work queue (SPEC §8 async
-	// seam): run `classify work` then `classify apply` to process them out of band.
-	if res.ProposalsPath != "" {
-		fmt.Fprintf(out, "  async work queue: %s (%d item(s); run `classify work` then `classify apply`)\n",
-			res.ProposalsPath, len(res.Skipped))
-	}
 
 	sc := res.Score
 	tb := "no"

@@ -153,8 +153,10 @@ Don't lose these — they're why the above is additive rather than a rewrite:
 
 ## 7. The §8 agent seam: execution models & hardening (design notes)
 
-Captured from the post-Phase-8 design discussion. The first item (async classify)
-is BUILT; the rest are designed but not all built.
+Captured from the post-Phase-8 design discussion. All of the below was **prototyped
+end-to-end (classify AND investigate) and parked on the `v2-preview` branch**
+(`git checkout v2-preview`); v1 (main) stays the synchronous core. This is v2/v3
+growth, not needed for the v1 deterministic close.
 
 ### 7.1 Asynchronous execution (BUILT for classify)
 

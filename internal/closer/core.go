@@ -12,12 +12,12 @@ import (
 	"github.com/razorpay/close-agent/internal/score"
 )
 
-// core.go is the SHARED close spine that every execution model runs (SPEC §5): the
-// playbook+ledger setup, ingest+normalize, the per-event book loop, the reconcile
-// input, and scoring. The ONLY thing that differs between models — synchronous
-// inline agent (RunWith), asynchronous apply (RunApply), and the investigate-fixture
-// generator — is HOW a rule miss is resolved, captured by the resolveMiss strategy.
-// Keeping the spine here means the determinism/ledger invariants are defined once.
+// core.go is the SHARED close spine (SPEC §5): the playbook+ledger setup,
+// ingest+normalize, the per-event book loop, the reconcile input, and scoring. The
+// ONLY thing that differs between callers — the close (RunWith) and the
+// investigate-fixture generator — is HOW a rule miss is resolved, captured by the
+// resolveMiss strategy. Keeping the spine here means the determinism/ledger
+// invariants are defined once.
 
 // resolveMiss is the per-model strategy for a rule-missed event: turn it into a
 // bindable Classification (handled=true), or report it skipped (handled=false, with

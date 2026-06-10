@@ -46,8 +46,6 @@ func NewRootCmd(out io.Writer) *cobra.Command {
 		newDiffCmd(out),
 		newRecordResponsesCmd(out),
 		newRecordInvestigationsCmd(out),
-		newClassifyCmd(out),
-		newInvestigateCmd(out),
 	)
 	return root
 }

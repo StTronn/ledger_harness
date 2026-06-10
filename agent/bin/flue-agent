@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-# flue-agent — run the close-agent Flue/LLM agent CLI.
-# Uses Node's native TypeScript stripping (Node >= 22.6), so there is no build step
-# and the deterministic default brain needs no installed dependencies.
-set -euo pipefail
-here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec node --experimental-strip-types "$here/../src/main.ts" "$@"
