@@ -1,4 +1,4 @@
-# close-agent — v2 / v3 Roadmap & Scaling Plan
+# ledger-flow — v2 / v3 Roadmap & Scaling Plan
 
 > **Status:** forward-looking. v1 (the Razorpay→books deterministic engine + judgment agent, SPEC Phases 0–8) is the current build.
 > **Purpose:** capture where this goes after v1 so we don't lose the thinking. Pairs with `SPEC.md` (v1) and §13 of it ("How it grows from v1").
@@ -40,7 +40,7 @@ The workflow, ledger core, and agent contract are **unchanged**. The agent's cla
 **Decide now / already designed in v1:** keep the income tree **channel-segmentable** (`income/product-sales/<channel>`) so per-channel P&L is free later. (v1 keeps paths segmentable.)
 
 **India-specific channel realities to model:**
-- **COD / RTO** (return-to-origin) — huge for Indian DTC; a returns/RTO lifecycle and its accounting (reverse logistics fees, cash-on-delivery remittance lag).
+- **COD / RTO** (return-to-origin) — huge for Indian DTC; a returns/RTO lifecycle and its accounting (reverse logistics fees, cash-on-delivery remittance lag). **BUILT — `worlds/dtc/2026-02`; deep-dive: §8.3.**
 - Marketplace **split settlements** (Razorpay Route), held balances, instant settlements.
 
 ---
@@ -114,7 +114,7 @@ This is the payoff the whole v1 architecture was shaped for — and why the seam
 - Near-real-time continuous accrual vs monthly batch close (product decision).
 
 ### 4d. Scope honesty
-v1 closes the **payments slice** only. A full monthly close also has bank charges, vendor bills, payroll, accruals, **deferred revenue (subscriptions)**, gift cards / store credit / loyalty. Be explicit that close-agent is "Razorpay→books" until we deliberately expand toward "the whole GL."
+v1 closes the **payments slice** only. A full monthly close also has bank charges, vendor bills, payroll, accruals, **deferred revenue (subscriptions — deep-dive: §8.2)**, gift cards / store credit / loyalty. Be explicit that ledger-flow is "Razorpay→books" until we deliberately expand toward "the whole GL."
 
 ---
 
@@ -152,6 +152,13 @@ Don't lose these — they're why the above is additive rather than a rewrite:
 ---
 
 ## 7. The §8 agent seam: execution models & hardening (design notes)
+
+> **Update:** the read-surface side of this section is now BUILT on main as the
+> harness subsystem (`internal/harness/{ledgergraph, policychecks, feeds}`) —
+> the policy/recovery registry, the rate-card feed + fee-tier check, and the
+> tier-2 `context entity` exploration tool. See `docs/HARNESS.md`. The novelty
+> ladder: tier-1 policy hit → tier-2 agent exploration → escalate; repeated
+> tier-2 walks are what v3a promotes into new policies.
 
 Captured from the post-Phase-8 design discussion. All of the below was **prototyped
 end-to-end (classify AND investigate) and parked on the `v2-preview` branch**
@@ -207,3 +214,154 @@ training data for the v3a learner and form the audit trail (v2d).
 they differ only in HOW a rule miss is resolved (inline agent vs results lookup).
 Factor a single `runCore` + a pluggable `MissResolver` so sync/async/investigate
 share one spine and one set of invariants.
+
+---
+
+## 8. Stateful-channel deep-dives (design notes, 2026-06)
+
+Captured from the post-v1 design discussion on what the *real* 5% looks like and
+how the two big stateful channels (subscriptions, COD/RTO) land on this
+architecture. **Headline convergence:** each expansion adds exactly ONE stateful
+primitive — subscriptions add the *recognition schedule*, COD/RTO adds the
+*shipment lifecycle*, Route adds the *held balance* — while the contract layer
+(balance-or-reject, `{entry_type, params}`, IK, citations, breaks→investigate,
+escalate-never-guess) absorbs all three unchanged. All three independently
+require the same base investments: **persistence (2a), period locking (2d), and
+the recovery registry** — those three are the real v1.5/v2 critical path, ahead
+of any individual channel.
+
+### 8.1 The real classify-misses (fixture-world ladder)
+
+The v1 `gst_rate`-stripped miss was a pedagogical stand-in (real merchants keep
+rates in a product master, not payment notes). The real ambiguity classes, as
+fixture worlds, cheapest-credible first:
+
+| Case | Why rules can't book it | Status |
+|---|---|---|
+| **Partial refund** — ₹350 of ₹1,180; return vs goodwill vs shipping refund | the refund object never says WHY | **BUILT** — `worlds/dtc/2026-01`, `seed.Options.PartialRefunds` (R1 item-match books `refund_reversal`; R2 goodwill + R3 unexplained escalate; honest 95% replay score) |
+| **Duplicate capture** — checkout retry charged twice | balanced-as-revenue is *wrong-but-balanced*; agent must REFUSE revenue → `customer_advance` liability | queued: cheapest next world (1 account + 1 entry type + sibling `orderPayments` index) |
+| **Orphan payment** — payment link / QR, no `order_id` | nothing to join; needs amount+timing+customer matching or suspense | the natural tier-2 (search-tool) demo |
+| **Bank-offer top-up** — paid ₹900, received ₹1,000 | revenue is 1,000 + bank receivable: policy + new concept | later |
+| **Mixed-rate bundle** — one line, two slabs | composite-vs-mixed supply is genuinely contested → can't write an honest truth GL | not a fixture; escalation-only |
+
+### 8.2 Subscriptions / deferred revenue (the *schedule* primitive)
+
+Breaks v1's quiet assumption: one event → one entry, at event time. Annual
+prepay ₹11,800 books GST on the advance immediately + ₹10,000 to
+`liabilities/deferred-revenue`, then a **clock-triggered** entry each month
+(Dr deferred / Cr subscription-revenue, IK `revrec:<sub_id>:<YYYY-MM>`).
+
+```
+v1:    event ──classify──► entry
+subs:  event ──classify──► entry + SCHEDULE ──recognize(period)──► entry/month
+```
+
+- The **schedule** is a first-class deterministic object (start, end, amount,
+  method) living in the ENGINE, not the agent; a new spine stage
+  `recognize(period)` walks open schedules at each close.
+- Load-bearing check: **deferred-revenue roll-forward** — `opening + new billings
+  − recognized − refunded == closing` (per sub & total); its investigate bundle is
+  the per-subscription expected-vs-actual schedule, structurally the v1
+  unbooked-refund batch view.
+- Agent judgment surface: mid-cycle upgrade proration (modification vs new
+  obligation), cancellation refund splits (clawback of recognized revenue),
+  dunning/failed-renewal matching, GST rate change mid-schedule, usage overage
+  (unbilled-revenue asset). The §8-interface extension is one level up:
+  `{schedule_action, params}` (create/truncate/split), ledger-validated.
+- Base delta: schedule object + `recognize` stage (the one true architectural
+  addition), deferred-revenue **sub-ledger** (second customer after inventory →
+  build sub-ledger as a generic capability), multi-period state (pulls 2a/2d
+  forward), canonical rounding/proration functions (the `gstsplit` discipline
+  applied to time-spreading; last-month-absorbs-remainder must be ONE function).
+- Razorpay Subscriptions object-graph misses (wrong plan, duplicate subscription
+  from checkout retry) are ordinary classify-misses on the new feed — downstream
+  of the schedule layer, ladder unchanged.
+
+### 8.3 COD / RTO (the *lifecycle* primitive)
+
+**Positioning (from Razorpay's own RTO material):** Razorpay's RTO suite (Magic
+Checkout, COD Intelligence, RTO Protection) lives BEFORE the order — predict,
+prevent, insure. Nothing touches what happens AFTER the parcel bounces: booking
+the costs, reconciling the courier's netted remittance, closing the month.
+**Magic Checkout reduces RTO; ledger-flow accounts for the RTO that happens
+anyway.** The courier feed is not hypothetical: merchants already pipe
+Shiprocket / Delhivery / ClickPost / Unicommerce / iThink data into Razorpay for
+the RTO Analytics "Delivery Data" widget — seed THAT shape (one aggregator feed,
+not multi-courier multi-feed). Scale, per Razorpay's published numbers: COD ≈
+66% of Indian e-retail orders, ~33% of COD undelivered, RTO adds 15–20%
+logistics cost per order. RTO Analytics shows the RTO *rate*; nobody shows the
+RTO *cost line in the P&L* — that report is ours.
+
+COD cash is collected by the courier and remitted in weekly netted batches — a
+**second money rail** with its own feed, receivable (`assets/cod-receivable` →
+third sub-ledger voter), and reconciliation. First true test of §1's "new
+channel = new feed + linked account + entry types + checks" claim. The demo
+exhibits exactly three things: (1) lifecycle booking under a book-at-delivery
+policy (RTO'd orders never create fake revenue), (2) every remittance proved to
+the rupee — break → agent decomposes the batch itself, (3) the RTO burn report.
+
+**BUILT — `worlds/dtc/2026-02` (`seed --cod`).** The whole vertical shipped and
+is gated like every other period:
+- **Vocabulary:** accounts `assets/cod-receivable`, `expense/cod-collection-fees`,
+  `expense/reverse-logistics`; entry types `cod_sale` (mirrors `dtc_sale`),
+  `cod_remittance` (mirrors `razorpay_settlement`), `rto_fee`, `weight_adjustment`.
+- **Feed:** `courier-feed.json` (Shiprocket-shaped: shipment lifecycle +
+  netted remittances with per-shipment deduction lines), read OPTIONALLY by
+  ingest (absent ⇒ Razorpay-only periods byte-unchanged). New event types
+  `cod_delivery` / `cod_remittance`; `EventType` confirmed data-extensible.
+- **The residual falls out, no inject needed:** rules book deliveries +
+  the remittance's collection-fee portion; the RTO fee + weight-dispute
+  deductions have no per-event rule, so `cod-receivable` is left short by exactly
+  their sum (₹158). A new ledger-aware check (`cod-receivable-residual`, the
+  COD twin of check #3) raises it.
+- **Recovery is a registry row, not new plumbing:** `rto-fee-from-ratecard`
+  policy (the COD twin of `fee-tier-from-ratecard`) validates each deduction
+  against the rate card + the shipment lifecycle — a backed RTO charge → book
+  `rto_fee` (cited to `ratecard/<courier>/rto_fee_paise`); anything else →
+  escalate. The recon bundle surfaces the deductions pre-classified.
+- **Investigation = decompose, resolve part, escalate the rest:** the investigate
+  seam now composes postings AND an escalation in one pass. Replay books the
+  ₹118 RTO fee and escalates the ₹40 weight dispute ("request the courier's
+  reweigh report"); the residual shrinks 158→40, the ₹40 stays listed.
+- **Gate (committed):** `2026-02 --agent off` = 95% / one ₹158 residual break;
+  `--agent replay` = 97% / ₹118 booked + ₹40 escalated (the designed honest
+  sub-100%). All four pre-existing periods byte/score-identical; full suite +
+  gofmt + vet green.
+
+- **Policy decision that dominates everything** (playbook-encoded, never the
+  agent's call): book revenue at shipment vs **delivery**. With 20–30% Indian RTO
+  rates, book-at-delivery keeps most RTOs from ever creating revenue.
+- **Remittance netting:** one batch = Σ collected − collection fees − RTO fees
+  (for FAILED orders, deducted from successful orders' cash) − weight-dispute
+  adjustments. The settlement template handles it; reconcile must explain every
+  deduction.
+- Checks: remittance batch-sum (check#2 twin), bank UTR match (check#1 twin),
+  RTO completeness, and the genuinely new **lifecycle check** — every shipment
+  older than (delivery SLA + remittance cycle) must be in a terminal state
+  (remitted / RTO-complete / claimed). Inherently cross-period → second voter
+  for pulling 2a/2d forward.
+- **This is where the system first LOOKS like an agent** (investigation, not
+  one-bundle judgment): a short-remittance break has no pre-computable bundle —
+  the agent decomposes the batch (members → lifecycle per member → rate card →
+  hypothesis → verify the residual closes), proposes MULTIPLE entries, *declines*
+  a revenue reversal by citing book-at-delivery policy, and partially solves the
+  break (books the rate-card-confirmed RTO fee, escalates the ₹40 weight
+  adjustment with the exact document to ask for — "explain 75%, hand a human the
+  precise remainder").
+- Base delta: one aggregator-shaped courier feed (forces the `ingest.EventType`
+  enum→data change); lifecycle state index in the read model; recovery-registry
+  entries (shipment→SLA/rate-card; remittance line→shipment→order). The
+  escalation case is the weight-dispute deduction (no rate-card basis, no
+  document in any feed → human).
+- **Prepaid RTO** (the cross-rail case): payment captured on Razorpay, parcel
+  bounces on the courier rail ⇒ refund out (existing `refund_reversal` path,
+  MDR not returned — pure loss), RTO fee in, and the two must be LINKED. A
+  courier feed turns a class of "unexplained" refunds (the partial-refund R3
+  shape) into explainable ones — cross-feed investigation, the realistic answer
+  to "where does missing refund context come from in production." New check:
+  every prepaid `rto_delivered` has a matching refund within policy SLA, and
+  vice versa.
+- Deferred (real, but not the demo): delivered-but-never-remitted aging
+  judgment, status flapping across locked periods (§2d), damaged-return
+  restock-vs-writeoff (§2c), RTO Protection reimbursements (a Razorpay
+  receivable — one entry type when it matters).

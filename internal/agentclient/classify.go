@@ -1,6 +1,10 @@
 package agentclient
 
-import "github.com/razorpay/close-agent/internal/money"
+import (
+	"encoding/json"
+
+	"github.com/razorpay/ledger-flow/internal/money"
+)
 
 // EventSummary is the source-agnostic snapshot of one normalized event the agent
 // classifies (SPEC §8 `in: { event: NormalizedEvent }`). It is the SUBSET of
@@ -36,7 +40,7 @@ type EventSummary struct {
 //
 // Params maps each of the chosen entry type's declared params to its paise value
 // (money.Money), keyed to the playbook (e.g. {gross, net, gst, payment_id} for
-// dtc_sale), the same shape the rule engine's classify.Classification carries.
+// dtc_sale), the same shape the rule engine's posting.Classification carries.
 type ClassifyResult struct {
 	EntryType      string                 `json:"entry_type,omitempty"`
 	Params         map[string]money.Money `json:"params,omitempty"`
@@ -45,9 +49,8 @@ type ClassifyResult struct {
 	Reason         string                 `json:"reason,omitempty"`
 }
 
-// Classifiable reports whether the result is a usable classification (an entry
-// type the orchestrator can bind+post) rather than an escalation. It is the
-// inverse of Unclassifiable plus a guard that an entry type is actually present.
+// Classifiable reports whether the result carries a usable recommendation rather
+// than an escalation. The recommendation remains review-only.
 func (r ClassifyResult) Classifiable() bool {
 	return !r.Unclassifiable && r.EntryType != ""
 }
@@ -88,7 +91,10 @@ const (
 // The Trace is always returned (even alongside an error or an unclassifiable
 // result) so every agent consultation is recorded.
 type Client interface {
-	Classify(ev EventSummary) (ClassifyResult, Trace, error)
+	// context is the deterministic recovery-engine bundle. Replay clients may
+	// ignore it; live clients pass it to the agent so the agent does not assemble
+	// primary context itself.
+	Classify(ev EventSummary, context ...json.RawMessage) (ClassifyResult, Trace, error)
 	// Mode reports which transport this client is (replay/live), for the trace
 	// and for operator-facing reporting.
 	Mode() Mode

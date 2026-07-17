@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/razorpay/close-agent/internal/money"
+	"github.com/razorpay/ledger-flow/internal/money"
 )
 
 // fakeChart is a hand-built accountSet for tests that should not depend on the

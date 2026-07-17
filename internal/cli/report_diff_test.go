@@ -80,10 +80,9 @@ func TestDiffCleanReportsNoDifferences(t *testing.T) {
 	}
 }
 
-// TestDiffTamperedShowsDifferences strips one payment's gst metadata so its sale
-// goes unbooked, then asserts `diff` lists the missing entry AND non-zero account
-// deltas (the gate's tampered-period case).
-func TestDiffTamperedShowsDifferences(t *testing.T) {
+// TestDiffTamperedRemainsClean strips one payment's gst metadata and verifies
+// recovery restores the missing fact before diffing against truth.
+func TestDiffTamperedRemainsClean(t *testing.T) {
 	root := seedRoot(t)
 	tamperPaymentGSTRate(t, root)
 
@@ -93,32 +92,27 @@ func TestDiffTamperedShowsDifferences(t *testing.T) {
 		t.Fatalf("diff after tamper: %v", err)
 	}
 	out := buf.String()
-	for _, want := range []string{"entry differences", "missing", "account balance deltas", "delta="} {
-		if !strings.Contains(out, want) {
-			t.Errorf("diff on tampered period missing %q\n---\n%s", want, out)
-		}
-	}
-	if strings.Contains(out, "no differences vs truth") {
-		t.Errorf("diff on tampered period reported no differences\n---\n%s", out)
+	if !strings.Contains(out, "no differences vs truth") {
+		t.Errorf("diff after deterministic recovery reported differences\n---\n%s", out)
 	}
 }
 
-// TestCloseWritesErrorsJSONViaCLI drives `close` and asserts it writes the frozen
+// TestCloseWritesErrorsJSONViaCLI drives `run` and asserts it writes the frozen
 // errors.json under runs/<world>-<period>/ and reports the path (SPEC §9, §10).
 func TestCloseWritesErrorsJSONViaCLI(t *testing.T) {
 	root := seedRoot(t)
 	var buf bytes.Buffer
-	args := []string{"close", "--world", "dtc", "--period", "2026-05", "--root", root}
+	args := []string{"run", "--world", "dtc", "--period", "2026-05", "--root", root}
 	if err := Execute(args, &buf); err != nil {
-		t.Fatalf("close: %v", err)
+		t.Fatalf("run: %v", err)
 	}
 	out := buf.String()
 	if !strings.Contains(out, "errors record:") || !strings.Contains(out, "schema v1") {
-		t.Errorf("close did not report the errors.json artifact\n---\n%s", out)
+		t.Errorf("run did not report the errors.json artifact\n---\n%s", out)
 	}
 	path := filepath.Join(root, "runs", "dtc-2026-05", "errors.json")
 	if _, err := os.Stat(path); err != nil {
-		t.Fatalf("errors.json not written by close: %v", err)
+		t.Fatalf("errors.json not written by run: %v", err)
 	}
 }
 

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/razorpay/close-agent/internal/money"
+	"github.com/razorpay/ledger-flow/internal/money"
 )
 
 // TestSplitInclusive asserts the canonical inclusive-GST split is byte-for-byte

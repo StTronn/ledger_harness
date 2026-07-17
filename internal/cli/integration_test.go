@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/razorpay/close-agent/internal/score"
+	"github.com/razorpay/ledger-flow/internal/score"
 )
 
 // integration_test.go is the Phase-6 "deterministic product complete" gate:
@@ -15,8 +15,8 @@ import (
 // SINGLE entry point — the CLI Execute surface, exactly what an operator runs —
 // and asserts the whole agent-free product holds together:
 //
-//   - seed → close produces score = 100% with 0 skipped events;
-//   - close writes runs/dtc-2026-05/errors.json with the FROZEN, version-stamped
+//   - seed → run produces score = 100% with 0 skipped events;
+//   - run writes runs/dtc-2026-05/errors.json with the FROZEN, version-stamped
 //     schema, 0 error records, score_pct 100, trial_balance_matches true, and
 //     every per-account delta zero (SPEC §9, §13);
 //   - report --kind {trial-balance,balance-sheet,income,journal} each render and
@@ -33,7 +33,7 @@ func runCLI(t *testing.T, args ...string) string {
 	t.Helper()
 	var buf bytes.Buffer
 	if err := Execute(args, &buf); err != nil {
-		t.Fatalf("close-agent %s: %v\n%s", strings.Join(args, " "), err, buf.String())
+		t.Fatalf("ledger-flow %s: %v\n%s", strings.Join(args, " "), err, buf.String())
 	}
 	return buf.String()
 }
@@ -57,7 +57,7 @@ func TestDeterministicProductEndToEnd(t *testing.T) {
 
 	// 2) Close: the full deterministic pipeline. A single command must produce the
 	// score AND the errors.json artifact and report both.
-	closeOut := runCLI(t, append([]string{"close"}, wp...)...)
+	closeOut := runCLI(t, append([]string{"run"}, wp...)...)
 	for _, want := range []string{
 		"skipped:    0 events",
 		"reconcile: 0 breaks (reconciled)",
@@ -68,11 +68,11 @@ func TestDeterministicProductEndToEnd(t *testing.T) {
 		"score = 100%",
 	} {
 		if !strings.Contains(closeOut, want) {
-			t.Errorf("close output missing %q\n---\n%s", want, closeOut)
+			t.Errorf("run output missing %q\n---\n%s", want, closeOut)
 		}
 	}
 	if strings.Contains(closeOut, "scoring errors") {
-		t.Errorf("close reported scoring errors on the clean period:\n%s", closeOut)
+		t.Errorf("run reported scoring errors on the clean period:\n%s", closeOut)
 	}
 
 	// 3) errors.json: written to runs/<world>-<period>/, decodes through the FROZEN
@@ -81,7 +81,7 @@ func TestDeterministicProductEndToEnd(t *testing.T) {
 	errPath := filepath.Join(root, "runs", "dtc-2026-05", "errors.json")
 	data, err := os.ReadFile(errPath)
 	if err != nil {
-		t.Fatalf("errors.json not written by close: %v", err)
+		t.Fatalf("errors.json not written by run: %v", err)
 	}
 	rec, err := score.UnmarshalErrors(data)
 	if err != nil {
@@ -147,7 +147,7 @@ func TestDeterministicProductEndToEnd(t *testing.T) {
 	}
 
 	// 6) show trace: a missing trace is handled gracefully (no error, exit 0). The
-	// run dir exists (close wrote errors.json there) but has no trace.json, which is
+	// run dir exists (run wrote errors.json there) but has no trace.json, which is
 	// the EXPECTED agent-free state.
 	traceOut := runCLI(t, "show", "trace", filepath.Join(root, "runs", "dtc-2026-05"))
 	if !strings.Contains(traceOut, "no trace available (agent phases not run)") {
@@ -172,17 +172,17 @@ func TestDeterministicProductByteIdentical(t *testing.T) {
 
 	errPath := filepath.Join(root, "runs", "dtc-2026-05", "errors.json")
 
-	closeA := runCLI(t, append([]string{"close"}, wp...)...)
+	closeA := runCLI(t, append([]string{"run"}, wp...)...)
 	errA, err := os.ReadFile(errPath)
 	if err != nil {
-		t.Fatalf("read errors.json after close A: %v", err)
+		t.Fatalf("read errors.json after run A: %v", err)
 	}
 	tbA := runCLI(t, append([]string{"report", "--kind", "trial-balance"}, wp...)...)
 
-	closeB := runCLI(t, append([]string{"close"}, wp...)...)
+	closeB := runCLI(t, append([]string{"run"}, wp...)...)
 	errB, err := os.ReadFile(errPath)
 	if err != nil {
-		t.Fatalf("read errors.json after close B: %v", err)
+		t.Fatalf("read errors.json after run B: %v", err)
 	}
 	tbB := runCLI(t, append([]string{"report", "--kind", "trial-balance"}, wp...)...)
 
@@ -190,7 +190,7 @@ func TestDeterministicProductByteIdentical(t *testing.T) {
 		t.Errorf("errors.json differs between runs:\n--- A ---\n%s\n--- B ---\n%s", errA, errB)
 	}
 	if closeA != closeB {
-		t.Errorf("close output differs between runs:\n--- A ---\n%s\n--- B ---\n%s", closeA, closeB)
+		t.Errorf("run output differs between runs:\n--- A ---\n%s\n--- B ---\n%s", closeA, closeB)
 	}
 	if tbA != tbB {
 		t.Errorf("trial-balance report differs between runs:\n--- A ---\n%s\n--- B ---\n%s", tbA, tbB)

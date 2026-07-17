@@ -3,10 +3,10 @@ package seed
 import (
 	"fmt"
 
-	"github.com/razorpay/close-agent/internal/config"
-	"github.com/razorpay/close-agent/internal/ledger"
-	"github.com/razorpay/close-agent/internal/money"
-	"github.com/razorpay/close-agent/internal/truth"
+	"github.com/razorpay/ledger-flow/internal/config"
+	"github.com/razorpay/ledger-flow/internal/ledger"
+	"github.com/razorpay/ledger-flow/internal/money"
+	"github.com/razorpay/ledger-flow/internal/truth"
 )
 
 // This file is the TRUTH-GL EMITTER (SPEC §2 Phase 2, §4.4, §4.2). It builds the

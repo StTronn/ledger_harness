@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/razorpay/close-agent/internal/money"
+	"github.com/razorpay/ledger-flow/internal/money"
 )
 
 // live.go is the LIVE / RECORD transport (SPEC §8, §11 Phase 7, §12, §14): it
@@ -67,9 +67,16 @@ func NewLiveClient(baseURL, world, period, recordPath string, httpClient *http.C
 // Mode reports live.
 func (c *LiveClient) Mode() Mode { return ModeLive }
 
-// classifyRequest is the §8 request body: { event: EventSummary }.
+// classifyRequest is the §8 request body: { event: EventSummary, world, period }.
+// world/period are carried so the agent host's read-only tools can address the
+// right snapshot (e.g. shell out to `ledger-flow context event <id> --world --period`,
+// the option-2 CLI-as-tool surface). They never widen the agent's authority — the
+// tools remain read-only over that period's committed fixtures.
 type classifyRequest struct {
-	Event EventSummary `json:"event"`
+	Event   EventSummary    `json:"event"`
+	World   string          `json:"world"`
+	Period  string          `json:"period"`
+	Context json.RawMessage `json:"context,omitempty"`
 }
 
 // Classify posts ev to the Flue endpoint and returns the decoded ClassifyResult
@@ -77,8 +84,12 @@ type classifyRequest struct {
 // infrastructure problem); an agent that declines is a normal {unclassifiable,
 // reason} result, not an error. On a successful response, if recording is enabled,
 // the response is folded into the in-memory recorded file (Flush persists it).
-func (c *LiveClient) Classify(ev EventSummary) (ClassifyResult, Trace, error) {
-	body, err := json.Marshal(classifyRequest{Event: ev})
+func (c *LiveClient) Classify(ev EventSummary, contexts ...json.RawMessage) (ClassifyResult, Trace, error) {
+	var context json.RawMessage
+	if len(contexts) > 0 {
+		context = contexts[0]
+	}
+	body, err := json.Marshal(classifyRequest{Event: ev, World: c.recorded.World, Period: c.recorded.Period, Context: context})
 	if err != nil {
 		return ClassifyResult{}, Trace{}, fmt.Errorf("agentclient: marshal classify request: %w", err)
 	}

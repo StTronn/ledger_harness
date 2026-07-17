@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/razorpay/close-agent/internal/money"
+	"github.com/razorpay/ledger-flow/internal/money"
 )
 
 // Template is the shape the binder needs from one entry-type template: its name,

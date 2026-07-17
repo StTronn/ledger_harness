@@ -138,8 +138,19 @@ func (l Layout) OrdersPath() string      { return filepath.Join(l.RazorpayDir(),
 
 // BankFeedPath is worlds/<world>/<period>/bank-feed.json — the independent bank
 // record (agent input).
+// RateCardPath is the merchant's contracted fee schedule (agent input, like the
+// bank feed a period-level artifact rather than a Razorpay object dump).
+func (l Layout) RateCardPath() string { return filepath.Join(l.PeriodDir(), "ratecard.json") }
+
 func (l Layout) BankFeedPath() string {
 	return filepath.Join(l.PeriodDir(), "bank-feed.json")
+}
+
+// CourierFeedPath is worlds/<world>/<period>/courier-feed.json — the optional
+// COD-rail feed (the courier's shipment lifecycle + netted remittances). Only
+// COD periods write it; ingest treats its absence as "no COD activity".
+func (l Layout) CourierFeedPath() string {
+	return filepath.Join(l.PeriodDir(), "courier-feed.json")
 }
 
 // TruthGLPath is worlds/<world>/<period>/truth/gl.json — the hidden ground-truth

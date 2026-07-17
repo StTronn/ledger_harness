@@ -53,10 +53,16 @@ func NewLiveInvestigateClient(baseURL, world, period, recordPath string, httpCli
 // Mode reports live.
 func (c *LiveInvestigateClient) Mode() Mode { return ModeLive }
 
-// investigateRequest is the §8 request body: { break: BreakSummary, candidates: EventSummary[] }.
+// investigateRequest is the §8 request body: { break, candidates, world, period }.
+// world/period let the agent host's read-only tools address the right snapshot
+// (e.g. `ledger-flow context break <key> --world --period`, the option-2 CLI-as-tool
+// surface); they never widen the agent's read-only authority.
 type investigateRequest struct {
-	Break      BreakSummary   `json:"break"`
-	Candidates []EventSummary `json:"candidates"`
+	Break      BreakSummary    `json:"break"`
+	Candidates []EventSummary  `json:"candidates"`
+	World      string          `json:"world"`
+	Period     string          `json:"period"`
+	Context    json.RawMessage `json:"context,omitempty"`
 }
 
 // Investigate posts the break (+ candidates) to the Flue endpoint and returns the
@@ -64,8 +70,12 @@ type investigateRequest struct {
 // failure is an error; an agent that escalates is a normal {escalate, reason}
 // result, not an error. On a successful response, if recording is enabled, the
 // response is folded into the in-memory recorded file (Flush persists it).
-func (c *LiveInvestigateClient) Investigate(brk BreakSummary, candidates []EventSummary) (InvestigateResult, InvestigateTrace, error) {
-	body, err := json.Marshal(investigateRequest{Break: brk, Candidates: candidates})
+func (c *LiveInvestigateClient) Investigate(brk BreakSummary, candidates []EventSummary, contexts ...json.RawMessage) (InvestigateResult, InvestigateTrace, error) {
+	var context json.RawMessage
+	if len(contexts) > 0 {
+		context = contexts[0]
+	}
+	body, err := json.Marshal(investigateRequest{Break: brk, Candidates: candidates, World: c.recorded.World, Period: c.recorded.Period, Context: context})
 	if err != nil {
 		return InvestigateResult{}, InvestigateTrace{}, fmt.Errorf("agentclient: marshal investigate request: %w", err)
 	}

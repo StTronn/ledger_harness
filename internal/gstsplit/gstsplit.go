@@ -14,7 +14,7 @@
 // statically.
 package gstsplit
 
-import "github.com/razorpay/close-agent/internal/money"
+import "github.com/razorpay/ledger-flow/internal/money"
 
 // SplitInclusive splits a GST-inclusive gross amount into its net (taxable base)
 // and GST components at the given integer rate percent, such that

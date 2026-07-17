@@ -1,6 +1,10 @@
 package agentclient
 
-import "github.com/razorpay/close-agent/internal/money"
+import (
+	"encoding/json"
+
+	"github.com/razorpay/ledger-flow/internal/money"
+)
 
 // ReplayInvestigateClient is the DEFAULT, CI-safe InvestigateClient (SPEC §11
 // Phase 8, §12), parallel to ReplayClient: it answers an Investigate call from the
@@ -42,17 +46,18 @@ func (c *ReplayInvestigateClient) Mode() Mode { return ModeReplay }
 //
 // It returns an error only if a recorded resolution is internally malformed (a
 // non-escalation with no postings is treated as an escalation, not an error).
-func (c *ReplayInvestigateClient) Investigate(brk BreakSummary, candidates []EventSummary) (InvestigateResult, InvestigateTrace, error) {
+func (c *ReplayInvestigateClient) Investigate(brk BreakSummary, candidates []EventSummary, _ ...json.RawMessage) (InvestigateResult, InvestigateTrace, error) {
 	rec, ok := c.index[brk.Key]
 	if !ok {
 		res := EscalatedInvestigation("no recorded investigation for break " + brk.Key)
 		return res, newInvestigateTrace(ModeReplay, brk, candidates, nil, res), nil
 	}
-	if rec.Escalate {
-		res := EscalatedInvestigation(rec.Reason)
-		return res, newInvestigateTrace(ModeReplay, brk, candidates, rec.ToolsUsed, res), nil
-	}
 
+	// A recorded resolution may carry BOTH postings and an escalation: a COD
+	// remittance break books the rate-card-backed deductions (rto_fee) AND
+	// escalates the unverified one (the weight dispute) in a single investigation
+	// (ROADMAP §8.3). Postings and escalation compose — the closer applies the
+	// postings and records the escalation.
 	postings := make([]Posting, 0, len(rec.Resolution))
 	for _, p := range rec.Resolution {
 		params := make(map[string]money.Money, len(p.Params))
@@ -61,10 +66,15 @@ func (c *ReplayInvestigateClient) Investigate(brk BreakSummary, candidates []Eve
 		}
 		postings = append(postings, Posting{EventID: p.EventID, EntryType: p.EntryType, Params: params})
 	}
-	if len(postings) == 0 {
+	if len(postings) == 0 && !rec.Escalate {
 		res := EscalatedInvestigation("recorded investigation for " + brk.Key + " has no postings")
 		return res, newInvestigateTrace(ModeReplay, brk, candidates, rec.ToolsUsed, res), nil
 	}
-	res := InvestigateResult{Resolution: postings, Rationale: rec.Rationale}
+	res := InvestigateResult{
+		Resolution: postings,
+		Rationale:  rec.Rationale,
+		Escalate:   rec.Escalate,
+		Reason:     rec.Reason,
+	}
 	return res, newInvestigateTrace(ModeReplay, brk, candidates, rec.ToolsUsed, res), nil
 }

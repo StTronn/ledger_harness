@@ -1,60 +1,314 @@
 {
   "accounts": [
-    { "path": "assets/bank", "note": "linked account; reconciles to the bank feed" },
-    { "path": "assets/razorpay-settlement-receivable", "note": "Razorpay owes us; should clear ~0 at period end" },
-    { "path": "liabilities/gst-output-payable", "note": "GST collected from customers" },
-    { "path": "liabilities/dispute-reserve", "note": "reserve held against open disputes" },
-    { "path": "income/product-sales", "note": "net product revenue" },
-    { "path": "income/shipping-revenue", "note": "shipping charged to customers" },
-    { "path": "income/sales-returns", "note": "contra-revenue; refunds reduce revenue here" },
-    { "path": "expense/processor-fees", "note": "Razorpay's processing fee" },
-    { "path": "expense/gst-input", "note": "GST on Razorpay's fee, recoverable" },
-    { "path": "expense/chargeback-loss", "note": "loss recognised on a lost dispute" }
+    {
+      "path": "assets/bank",
+      "note": "linked account; reconciles to the bank feed"
+    },
+    {
+      "path": "assets/razorpay-settlement-receivable",
+      "note": "Razorpay owes us; should clear ~0 at period end"
+    },
+    {
+      "path": "liabilities/gst-output-payable",
+      "note": "GST collected from customers"
+    },
+    {
+      "path": "liabilities/dispute-reserve",
+      "note": "reserve held against open disputes"
+    },
+    {
+      "path": "income/product-sales",
+      "note": "net product revenue"
+    },
+    {
+      "path": "income/shipping-revenue",
+      "note": "shipping charged to customers"
+    },
+    {
+      "path": "income/sales-returns",
+      "note": "contra-revenue; refunds reduce revenue here"
+    },
+    {
+      "path": "income/discounts-allowances",
+      "note": "contra-revenue; goodwill credits / price adjustments (credit-note treatment) reduce revenue here"
+    },
+    {
+      "path": "expense/processor-fees",
+      "note": "Razorpay's processing fee"
+    },
+    {
+      "path": "expense/gst-input",
+      "note": "GST on Razorpay's fee, recoverable"
+    },
+    {
+      "path": "expense/chargeback-loss",
+      "note": "loss recognised on a lost dispute"
+    },
+    {
+      "path": "assets/cod-receivable",
+      "note": "cash-on-delivery: the courier collected our cash at the door and owes it to us; clears ~0 once remitted"
+    },
+    {
+      "path": "expense/cod-collection-fees",
+      "note": "the courier's per-shipment COD collection fee"
+    },
+    {
+      "path": "expense/reverse-logistics",
+      "note": "return-to-origin (RTO) shipping the courier charges back on undelivered parcels"
+    }
   ],
   "entry_types": [
     {
       "name": "dtc_sale",
       "doc": "Customer purchase captured by Razorpay: gross receivable from Razorpay, split into net product revenue and output GST.",
-      "params": ["gross", "net", "gst", "payment_id"],
+      "params": [
+        "gross",
+        "net",
+        "gst",
+        "payment_id"
+      ],
       "tx_param": "payment_id",
       "lines": [
-        { "side": "Dr", "account": "assets/razorpay-settlement-receivable", "amount": "gross" },
-        { "side": "Cr", "account": "income/product-sales", "amount": "net" },
-        { "side": "Cr", "account": "liabilities/gst-output-payable", "amount": "gst" }
+        {
+          "side": "Dr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": "gross"
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": "net"
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": "gst"
+        }
       ]
     },
     {
       "name": "razorpay_settlement",
       "doc": "Razorpay deposits net cash to the bank, having netted its fee and GST-on-fee out of the gross receivable. Posted via reconcileTx (bank is the linked account).",
-      "params": ["net_deposit", "fee", "gst_on_fee", "gross", "bank_tx_id"],
+      "params": [
+        "net_deposit",
+        "fee",
+        "gst_on_fee",
+        "gross",
+        "bank_tx_id"
+      ],
       "tx_param": "bank_tx_id",
       "lines": [
-        { "side": "Dr", "account": "assets/bank", "amount": "net_deposit" },
-        { "side": "Dr", "account": "expense/processor-fees", "amount": "fee" },
-        { "side": "Dr", "account": "expense/gst-input", "amount": "gst_on_fee" },
-        { "side": "Cr", "account": "assets/razorpay-settlement-receivable", "amount": "gross" }
+        {
+          "side": "Dr",
+          "account": "assets/bank",
+          "amount": "net_deposit"
+        },
+        {
+          "side": "Dr",
+          "account": "expense/processor-fees",
+          "amount": "fee"
+        },
+        {
+          "side": "Dr",
+          "account": "expense/gst-input",
+          "amount": "gst_on_fee"
+        },
+        {
+          "side": "Cr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": "gross"
+        }
       ]
     },
     {
       "name": "refund_reversal",
       "doc": "Customer refund: reverse net revenue (into the contra-revenue account) and the output GST, clearing the receivable for the refunded amount.",
-      "params": ["net", "gst", "refund_id"],
+      "params": [
+        "net",
+        "gst",
+        "refund_id"
+      ],
       "tx_param": "refund_id",
       "lines": [
-        { "side": "Dr", "account": "income/sales-returns", "amount": "net" },
-        { "side": "Dr", "account": "liabilities/gst-output-payable", "amount": "gst" },
-        { "side": "Cr", "account": "assets/razorpay-settlement-receivable", "amount": "net+gst" }
+        {
+          "side": "Dr",
+          "account": "income/sales-returns",
+          "amount": "net"
+        },
+        {
+          "side": "Dr",
+          "account": "liabilities/gst-output-payable",
+          "amount": "gst"
+        },
+        {
+          "side": "Cr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": "net+gst"
+        }
+      ]
+    },
+    {
+      "name": "price_adjustment",
+      "doc": "Goodwill credit / price adjustment refund (credit note): reduce revenue via discounts-allowances and the output GST, clearing the receivable for the credited amount. Truth-only in v1 agent policy: the agent escalates goodwill rather than booking it.",
+      "params": [
+        "net",
+        "gst",
+        "refund_id"
+      ],
+      "tx_param": "refund_id",
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "income/discounts-allowances",
+          "amount": "net"
+        },
+        {
+          "side": "Dr",
+          "account": "liabilities/gst-output-payable",
+          "amount": "gst"
+        },
+        {
+          "side": "Cr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": "net+gst"
+        }
       ]
     },
     {
       "name": "chargeback_loss",
       "doc": "Lost dispute: recognise the loss and reverse the output GST, with cash leaving the bank.",
-      "params": ["net", "gst", "dispute_id"],
+      "params": [
+        "net",
+        "gst",
+        "dispute_id"
+      ],
       "tx_param": "dispute_id",
       "lines": [
-        { "side": "Dr", "account": "expense/chargeback-loss", "amount": "net" },
-        { "side": "Dr", "account": "liabilities/gst-output-payable", "amount": "gst" },
-        { "side": "Cr", "account": "assets/bank", "amount": "net+gst" }
+        {
+          "side": "Dr",
+          "account": "expense/chargeback-loss",
+          "amount": "net"
+        },
+        {
+          "side": "Dr",
+          "account": "liabilities/gst-output-payable",
+          "amount": "gst"
+        },
+        {
+          "side": "Cr",
+          "account": "assets/bank",
+          "amount": "net+gst"
+        }
+      ]
+    },
+    {
+      "name": "cod_sale",
+      "doc": "Cash-on-delivery sale, recognised at DELIVERY (revenue-at-delivery policy): the courier has collected our cash at the door, so the gross is receivable from the courier, split into net product revenue and output GST. Mirrors dtc_sale on the COD rail.",
+      "params": [
+        "gross",
+        "net",
+        "gst",
+        "shipment_id"
+      ],
+      "tx_param": "shipment_id",
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/cod-receivable",
+          "amount": "gross"
+        },
+        {
+          "side": "Cr",
+          "account": "income/product-sales",
+          "amount": "net"
+        },
+        {
+          "side": "Cr",
+          "account": "liabilities/gst-output-payable",
+          "amount": "gst"
+        }
+      ]
+    },
+    {
+      "name": "cod_remittance",
+      "doc": "Courier wires the collected COD cash to the bank, having netted its per-shipment collection fee and GST-on-fee out of the gross it collected. Mirrors razorpay_settlement on the COD rail: net_deposit + fee + gst_on_fee == the gross it clears off the COD receivable.",
+      "params": [
+        "net_deposit",
+        "fee",
+        "gst_on_fee",
+        "gross",
+        "remittance_id"
+      ],
+      "tx_param": "remittance_id",
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "assets/bank",
+          "amount": "net_deposit"
+        },
+        {
+          "side": "Dr",
+          "account": "expense/cod-collection-fees",
+          "amount": "fee"
+        },
+        {
+          "side": "Dr",
+          "account": "expense/gst-input",
+          "amount": "gst_on_fee"
+        },
+        {
+          "side": "Cr",
+          "account": "assets/cod-receivable",
+          "amount": "gross"
+        }
+      ]
+    },
+    {
+      "name": "rto_fee",
+      "doc": "Return-to-origin fee the courier charges on an undelivered parcel, netted out of a remittance. Recognises the reverse-logistics cost and its recoverable input GST, clearing the COD receivable for the deducted amount. The investigate agent books this only when the deduction matches the courier's rate card.",
+      "params": [
+        "net",
+        "gst",
+        "shipment_id"
+      ],
+      "tx_param": "shipment_id",
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "expense/reverse-logistics",
+          "amount": "net"
+        },
+        {
+          "side": "Dr",
+          "account": "expense/gst-input",
+          "amount": "gst"
+        },
+        {
+          "side": "Cr",
+          "account": "assets/cod-receivable",
+          "amount": "net+gst"
+        }
+      ]
+    },
+    {
+      "name": "weight_adjustment",
+      "doc": "Courier weight-dispute deduction netted out of a remittance (a reweigh charge). Clears the COD receivable for the deducted amount against reverse-logistics. Truth books it; the agent escalates an unverified weight deduction rather than booking it, since it has no rate-card basis.",
+      "params": [
+        "amount",
+        "shipment_id"
+      ],
+      "tx_param": "shipment_id",
+      "lines": [
+        {
+          "side": "Dr",
+          "account": "expense/reverse-logistics",
+          "amount": "amount"
+        },
+        {
+          "side": "Cr",
+          "account": "assets/cod-receivable",
+          "amount": "amount"
+        }
       ]
     }
   ]

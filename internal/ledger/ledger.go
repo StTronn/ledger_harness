@@ -1,5 +1,5 @@
 // Package ledger is the deterministic double-entry posting engine of
-// close-agent. It is the ONLY source of money truth (SPEC §1 golden rule, §6):
+// ledger-flow. It is the ONLY source of money truth (SPEC §1 golden rule, §6):
 // every entry either BALANCES and is posted, or is REJECTED — it is never
 // silently fixed. The ledger knows NOTHING about Razorpay; it speaks only in
 // chart-of-accounts paths, debits/credits, and integer paise.
@@ -44,7 +44,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/razorpay/close-agent/internal/money"
+	"github.com/razorpay/ledger-flow/internal/money"
 )
 
 // Side is the debit/credit side a posted line sits on. It mirrors

@@ -3,7 +3,7 @@ package seed
 import (
 	"testing"
 
-	"github.com/razorpay/close-agent/internal/money"
+	"github.com/razorpay/ledger-flow/internal/money"
 )
 
 // TestSplitGSTInclusive asserts the GST split is exact (net+gst == gross to the

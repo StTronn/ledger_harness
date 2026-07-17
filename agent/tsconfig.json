@@ -1,0 +1,19 @@
+{
+  // Strict, no-emit type-checking only: the runtime path is Node's native
+  // --experimental-strip-types (Node 22), so tsc never emits JS — it only
+  // proves the §8 wiring is sound. allowImportingTsExtensions lets the source
+  // import sibling modules by their real ".ts" path, which strip-types requires.
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "include": ["src"]
+}

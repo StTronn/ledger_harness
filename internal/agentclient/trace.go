@@ -1,6 +1,6 @@
 package agentclient
 
-import "github.com/razorpay/close-agent/internal/money"
+import "github.com/razorpay/ledger-flow/internal/money"
 
 // TraceSchemaVersion is the FROZEN version stamped into every Trace.SchemaVersion
 // (SPEC §9, §13 "freeze the trace schema early — it's the learning seam"). The

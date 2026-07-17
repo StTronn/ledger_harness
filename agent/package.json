@@ -1,0 +1,21 @@
+{
+  "name": "ledger-flow-flue",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "TypeScript Flue agent HTTP service implementing the §8 agent seam (classify + investigate) the Go orchestrator's live mode calls over HTTP.",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "start": "node --experimental-strip-types src/main.ts",
+    "test": "node --experimental-strip-types src/split.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "typescript": "^5.9"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^3.0.69",
+    "ai": "^6.0.201",
+    "zod": "^4.4.3"
+  }
+}

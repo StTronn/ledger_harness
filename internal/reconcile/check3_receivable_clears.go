@@ -3,8 +3,8 @@ package reconcile
 import (
 	"fmt"
 
-	"github.com/razorpay/close-agent/internal/ingest"
-	"github.com/razorpay/close-agent/internal/money"
+	"github.com/razorpay/ledger-flow/internal/ingest"
+	"github.com/razorpay/ledger-flow/internal/money"
 )
 
 // checkReceivableClears is SPEC §7 check #3 (Receivable-clears): the
@@ -63,6 +63,45 @@ func checkReceivableClears(in Input) []Break {
 		SettlementID:      "", // period-wide, not tied to one settlement
 		Expected:          inTransit,
 		Actual:            in.ReceivableBalance,
+		CandidateEventIDs: candidates,
+		Detail:            detail,
+	}}
+}
+
+// checkCODReceivableClears is the COD-rail twin of check #3 (ROADMAP §8.3): the
+// assets/cod-receivable balance at period end must be ~0. The courier collected
+// the cash (debiting the receivable at each delivery) and the remittance cleared
+// its collection-fee portion (crediting it), but the per-shipment deductions the
+// deterministic rules cannot book — the RTO fee and weight-dispute adjustment —
+// leave the receivable SHORT by exactly their sum. That non-zero balance is the
+// residual the investigate agent decomposes against the remittance.
+//
+// v1 models no COD in-transit (the remittance lands in-period), so the allowance
+// is 0: any non-zero balance is a break. The break points at the remittance(s)
+// whose deduction lines explain the gap (the candidate ids), so the investigator
+// can pull the remittance, match each deduction against the rate card, and book
+// or escalate it.
+func checkCODReceivableClears(in Input) []Break {
+	if in.CODReceivableBalance == money.FromPaise(0) {
+		return nil // no COD activity, or every shipment fully cleared
+	}
+	var remID string
+	var candidates []string
+	for _, rm := range in.CourierFeed.Remittances {
+		candidates = append(candidates, rm.ID)
+		if remID == "" {
+			remID = rm.ID // the break keys off the first remittance (one in v1)
+		}
+	}
+	detail := fmt.Sprintf(
+		"cod-receivable residual %s at period end: the courier netted deductions out of the remittance that no rule booked",
+		in.CODReceivableBalance)
+	return []Break{{
+		Check:             CheckReceivableClears,
+		Kind:              KindCODReceivableResidual,
+		SettlementID:      remID,
+		Expected:          money.FromPaise(0),
+		Actual:            in.CODReceivableBalance,
 		CandidateEventIDs: candidates,
 		Detail:            detail,
 	}}

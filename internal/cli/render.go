@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/razorpay/close-agent/internal/ledger"
-	"github.com/razorpay/close-agent/internal/money"
+	"github.com/razorpay/ledger-flow/internal/ledger"
+	"github.com/razorpay/ledger-flow/internal/money"
 )
 
 // render.go holds the terminal renderers for the four SPEC §10 reports. Each is a

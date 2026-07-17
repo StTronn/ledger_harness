@@ -34,10 +34,11 @@
 package reconcile
 
 import (
+	"fmt"
 	"sort"
 
-	"github.com/razorpay/close-agent/internal/ingest"
-	"github.com/razorpay/close-agent/internal/money"
+	"github.com/razorpay/ledger-flow/internal/ingest"
+	"github.com/razorpay/ledger-flow/internal/money"
 )
 
 // CheckNum identifies which of the SPEC §7 checks raised a break. It is a small
@@ -70,6 +71,13 @@ const (
 	// KindReceivableResidual: the receivable does not clear to ~0 at period end
 	// beyond genuine in-transit amounts (check #3).
 	KindReceivableResidual = "receivable-residual"
+	// KindCODReceivableResidual: the COD receivable (the courier rail) does not
+	// clear to ~0 at period end (check #3, ROADMAP §8.3). The courier collected the
+	// cash and the remittance cleared its collection-fee portion, but the
+	// per-shipment deductions (RTO fee, weight dispute) the rules cannot book leave
+	// the receivable short by exactly their sum — the residual the investigate
+	// agent decomposes against the remittance.
+	KindCODReceivableResidual = "cod-receivable-residual"
 )
 
 // Break is one reconciliation failure with enough context for the (Phase-8)
@@ -99,6 +107,16 @@ type Break struct {
 	Detail            string
 }
 
+// Key is the canonical stable identifier for a break — "check<N>:<kind>:<settlement>"
+// — the join key the recorded-investigation fixture, the investigate trace, and the
+// read model's break lookup all share. A period-wide break (the receivable residual)
+// has an empty settlement id, which is fine: there is at most one such break per
+// period in v1. It is defined here, next to Break, so producer and reader can never
+// drift on the scheme.
+func (b Break) Key() string {
+	return fmt.Sprintf("check%d:%s:%s", b.Check, b.Kind, b.SettlementID)
+}
+
 // Input bundles everything Reconcile needs, all of it AGENT-INPUT or
 // ledger-derived (never truth). Keeping it a struct makes the call site explicit
 // about what reconciliation depends on and lets tests build a minimal scenario.
@@ -116,6 +134,14 @@ type Input struct {
 	// derived from the posted ledger by the caller (positive = still owed to us).
 	// reconcile does not read the ledger itself, keeping it a pure value function.
 	ReceivableBalance money.Money
+
+	// CODReceivableBalance is the cod-receivable account balance at period end
+	// (the courier rail, ROADMAP §8.3), derived from the posted ledger by the
+	// caller. Zero when the period has no COD activity. CourierFeed carries the
+	// remittance(s) so the COD residual break can point the investigator at the
+	// remittance whose deductions explain the gap.
+	CODReceivableBalance money.Money
+	CourierFeed          ingest.RawCourierFeed
 
 	// PeriodEnd is the exclusive end of the period as a YYYY-MM-DD date string
 	// (the 1st of the NEXT month). A settlement whose bank credit lands on or after
@@ -140,6 +166,7 @@ func Reconcile(in Input) []Break {
 	breaks = append(breaks, checkSettlementBank(in)...)
 	breaks = append(breaks, checkBatchSum(in)...)
 	breaks = append(breaks, checkReceivableClears(in)...)
+	breaks = append(breaks, checkCODReceivableClears(in)...)
 
 	// Stable order: check number first, then settlement id, so the break list is
 	// byte-identical across runs regardless of the slice iteration above.

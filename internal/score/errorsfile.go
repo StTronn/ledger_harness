@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/razorpay/close-agent/internal/money"
-	"github.com/razorpay/close-agent/internal/truth"
+	"github.com/razorpay/ledger-flow/internal/money"
+	"github.com/razorpay/ledger-flow/internal/truth"
 )
 
 // errorsfile.go defines and persists the errors.json artifact (SPEC §9, §10) —

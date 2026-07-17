@@ -10,7 +10,7 @@ import (
 )
 
 // investigate_recordfile.go is the on-disk form of recorded INVESTIGATE responses
-// (SPEC §8, §12), parallel to recordfile.go for classify. The committed
+// (SPEC §8, §12), parallel to recordfile.go for posting. The committed
 // investigate.recorded.json lets a CI run REPLAY the investigate agent's
 // resolutions byte-for-byte with no LLM, keyed by break id.
 

@@ -9,7 +9,7 @@ import (
 // Print writes a human-readable rendering of the playbook to w: the chart of
 // accounts grouped by root (with each account's normal balance) followed by the
 // entry-type templates and their balanced lines. It is a pure function of the
-// loaded Playbook — no side state — so `close-agent show playbook` doubles as
+// loaded Playbook — no side state — so `ledger-flow show playbook` doubles as
 // proof the file loaded and validated.
 func (p *Playbook) Print(w io.Writer) error {
 	bw := &errWriter{w: w}

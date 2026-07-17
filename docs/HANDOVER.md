@@ -1,4 +1,4 @@
-# close-agent — Build Handover / Resume State
+# ledger-flow — Build Handover / Resume State
 
 > **Read this first if you're resuming the build.** It captures what's done, the locked decisions, how the work is being executed, how to verify it, and the exact next task. Pairs with `docs/SPEC.md` (the v1 design, source of truth) and `docs/ROADMAP-v2-v3.md` (post-v1 growth).
 > **Last updated at:** v1 simplified to the SYNCHRONOUS core — the deterministic spine + the two agent seams (classify + investigate), `--agent off|replay|live`, record/replay. The async pipeline, human-review gate, provenance/validator, and the TS `flue-agent` CLI we prototyped are preserved on the **`v2-preview` branch** (not on main).
@@ -13,7 +13,7 @@
 | 1 | Ledger core (money, playbook, post=balance-or-reject+idempotent, reports) | ✅ committed `e185ed9` |
 | 2 | Seeder (deterministic fixtures + truth GL + `truth/` isolation guard) | ✅ committed `69deedd` |
 | 3 | Ingest + normalize (§4.3 journal, golden-tested) | ✅ committed `87a8f80` |
-| 4 | Rule-engine classify + `close` wiring + minimal score | ✅ committed `1c4efd9` |
+| 4 | Bookkeeper classify + `close` wiring + minimal score | ✅ committed `1c4efd9` |
 | 5 | Reconcile (3 checks) + bank feed + seeded break (`--inject refund-in-batch`) | ✅ committed `6cc14f0` |
 | 6 | Scorer + reports CLI + frozen `errors.json` ⭐ deterministic product complete | ✅ committed `3a2e194` |
 | 7a | Agent seam (Go side): long tail, `orders.json`, record/replay, traces | ✅ committed `7b49ba6` |
@@ -40,7 +40,7 @@
 
 Each phase is built by a **dynamic workflow** then **gated by the main agent**:
 
-1. **Workflow** (`/Users/rishav/projects/razorpay/.orchestration/close-agent-phase.js`): a reusable per-phase script. Invoke it with the **Workflow tool**, passing the phase spec as `args` (JSON object: `{id,title,goal,modules:[{name,instructions}],gate}`). It runs dev modules **sequentially** (shared greenfield code → avoid file conflicts) → a correctness **fix** stage (fires only if dev self-reports red) → ONE light advisory high-level **review**. Review is intentionally light per the user ("focus on correctness; review just notes high-level scaffolding/abstractions/modules").
+1. **Workflow** (`/Users/rishav/projects/razorpay/.orchestration/ledger-flow-phase.js`): a reusable per-phase script. Invoke it with the **Workflow tool**, passing the phase spec as `args` (JSON object: `{id,title,goal,modules:[{name,instructions}],gate}`). It runs dev modules **sequentially** (shared greenfield code → avoid file conflicts) → a correctness **fix** stage (fires only if dev self-reports red) → ONE light advisory high-level **review**. Review is intentionally light per the user ("focus on correctness; review just notes high-level scaffolding/abstractions/modules").
 2. **Main agent gate (this is the real verification):** after the workflow returns, the main agent runs the actual gate itself — `gofmt -l .`, `go vet ./...`, `go build ./...`, `go test ./... -count=1`, then *exercises the CLI* and does an **independent check** (e.g. recompute expected numbers in Python and diff vs output). Only commit when the gate genuinely passes.
 
 **Critical lesson:** the workflow harness's success/failure verdict is **not** ground truth. Phase 7a's workflow reported `failed` (a dev agent skipped its final StructuredOutput, so fix+review never ran) — yet the code was fully written and passed the gate. Conversely earlier phases reported success but still needed gating. **Always gate empirically; never trust the workflow verdict or the editor diagnostics.**
@@ -78,16 +78,16 @@ ingest → normalize → classify(rules) → [agent on rule-miss] → post → r
 | `truth` | ground-truth GL types + the ONLY allowed truth reader (isolation guard lives here) |
 | `seed` | deterministic seeder: RNG from (world,period), Razorpay-shaped fixtures, `orders.json`, ambiguity injection, break injection (`--inject`), truth GL emitter |
 | `ingest` | read fixtures → raw types; normalize → §4.3 event journal (golden-pinned) |
-| `classify` | per-event rule engine → Classification {entry_type, params, ik, tx_id, ts}; the SAME shape the agent fills |
+| `classify` | per-event bookkeeper → Classification {entry_type, params, ik, tx_id, ts}; the SAME shape the agent fills |
 | `agentclient` | §8 clients: `Classify` and `Investigate`, each with `replay` (committed fixture) / `live` (Flue HTTP) modes; frozen classify + investigate trace emission |
 | `closer` | the `close` orchestrator: ingest→normalize→classify→[agent]→post→reconcile→[investigate agent]→score; writes errors.json + traces; `GenerateInvestigateRecorded` builds the investigate fixture |
 | `reconcile` | §7 three checks → []Break (with context for the investigator) |
 | `score` | diff produced vs truth by event_id; %correct + TB-match + per-account deltas + errors.json |
 | `cli` | cobra commands: seed / close / report / diff / show / record |
 
-**CLI surface:** `seed --world --period [--inject <class>] [--ambiguity ...] [--root]`, `close --world --period --agent off|replay|live`, `report --world --period --kind trial-balance|balance-sheet|income|journal`, `diff --world --period`, `show playbook|trace <path>`, `record-responses --world --period` (hidden; regenerates the recorded classify fixture from orders.json), `record-investigations --world --period` (hidden; regenerates the recorded investigate fixture from the snapshotted fixtures).
+**CLI surface:** `seed --world --period [--inject <class>] [--ambiguity ...] [--partial-refunds] [--cod] [--root]`, `close --world --period --agent off|replay|live`, `report --world --period --kind trial-balance|balance-sheet|income|journal`, `diff --world --period`, `show playbook|trace <path>`, `record-responses --world --period` (hidden; regenerates the recorded classify fixture from orders.json), `record-investigations --world --period` (hidden; regenerates the recorded investigate fixture from the snapshotted fixtures).
 
-**Periods on disk:** `worlds/dtc/2026-05` (clean, 100%), `worlds/dtc/2026-04` (hard: ~15% gst_rate-stripped payments + `orders.json` recovery source + committed `agent/classify.recorded.json`), `worlds/dtc/2026-03` (Phase-8 break: one gst_rate-stripped refund → check#3 residual + committed `agent/classify.recorded.json` (escalates the refund) + `agent/investigate.recorded.json` (resolves it)). `runs/` is gitignored (errors.json, trace.json, investigate-trace.json land there).
+**Periods on disk:** `worlds/dtc/2026-05` (clean, 100%), `worlds/dtc/2026-04` (hard: ~15% gst_rate-stripped payments + `orders.json` recovery source + committed `agent/classify.recorded.json`), `worlds/dtc/2026-03` (Phase-8 break: one gst_rate-stripped refund → check#3 residual + committed `agent/classify.recorded.json` (escalates the refund) + `agent/investigate.recorded.json` (resolves it)), `worlds/dtc/2026-01` (partial-refund judgment world: `seed.Options.PartialRefunds` plants R1 item-match / R2 goodwill / R3 unexplained; replay books R1 as `refund_reversal`, escalates R2+R3, investigate escalates the check#3 residual — designed honest score: off 93%, replay 95%), `worlds/dtc/2026-02` (COD/RTO world: `seed --cod` appends the courier rail — delivered shipments + one RTO + a netted `courier-feed.json` remittance; the RTO fee + weight-dispute deductions no rule can book leave a `cod-receivable-residual` break of ₹158; replay's investigate books the rate-card-backed ₹118 `rto_fee` and escalates the ₹40 weight dispute via the `rto-fee-from-ratecard` policy — designed honest score: off 95%, replay 97%). `runs/` is gitignored (errors.json, trace.json, investigate-trace.json land there).
 
 ---
 
@@ -96,12 +96,14 @@ ingest → normalize → classify(rules) → [agent on rule-miss] → post → r
 ```sh
 cd /Users/rishav/projects/razorpay/close-agent
 gofmt -l . && go vet ./... && go build ./... && go test ./... -count=1   # all clean / pass (13 pkgs)
-go build -o /tmp/ca ./cmd/close-agent
+go build -o /tmp/ca ./cmd/ledger-flow
 /tmp/ca close --world dtc --period 2026-05 --agent off      # 45/45, 0 breaks, score = 100%
 /tmp/ca close --world dtc --period 2026-04 --agent off      # 36/41, 5 skips, 1 break, score = 87%
 /tmp/ca close --world dtc --period 2026-04 --agent replay   # 41/41, 0 breaks, 5 traces, score = 100%
 /tmp/ca close --world dtc --period 2026-03 --agent off       # 37/38, 1 skip, 1 break (check#3 residual), score = 97%
 /tmp/ca close --world dtc --period 2026-03 --agent replay    # investigate resolves 1 break -> 0 breaks, 38/38, score = 100%
+/tmp/ca close --world dtc --period 2026-01 --agent off       # 45/48, 3 partial-refund skips, 1 break, score = 93%
+/tmp/ca close --world dtc --period 2026-01 --agent replay    # R1 booked, R2+R3 escalated, residual escalated -> 46/48, score = 95% (designed honest sub-100%)
 go test ./internal/truth/ -run TestTruthIsolation -count=1  # PASS (truth stays scorer-only; agentclient+closer never import it)
 ```
 
@@ -161,7 +163,7 @@ scheme.
 
 ## 8. NEXT TASK — Phase 7b: the Flue `classify` service (TS)
 
-Stand up the Flue TS service implementing §8 `classify` (and later `investigate`): `createAgent({ model: 'anthropic/...', instructions, tools, skills })`, `session.prompt(input, {result: schema})` for `{entry_type, params, rationale}`. Generate `SKILL.md` from `config/playbook.json` (so playbook and skill can't drift). Read-only tools (`getOrder`/`getPayment`) call a Go read API over snapshotted fixtures. Flue auto-exposes `POST /agents/<name>/<id>`; `agentclient` live mode posts there and records responses for replay. **Verification under recorded-only:** build/typecheck + confirm the §8 request/response shape and that live→record reproduces the committed fixtures; classification *quality* needs a live key (non-CI eval), which is out of CI scope. Note: the Go-centric `close-agent-phase` workflow is Go-shaped — for the TS service, either pass TS-specific instructions/gate in the phase args or build it with direct agents using a TS gate (`npm i`, `tsc`, `flue build`).
+Stand up the Flue TS service implementing §8 `classify` (and later `investigate`): `createAgent({ model: 'anthropic/...', instructions, tools, skills })`, `session.prompt(input, {result: schema})` for `{entry_type, params, rationale}`. Generate `SKILL.md` from `config/playbook.json` (so playbook and skill can't drift). Read-only tools (`getOrder`/`getPayment`) call a Go read API over snapshotted fixtures. Flue auto-exposes `POST /agents/<name>/<id>`; `agentclient` live mode posts there and records responses for replay. **Verification under recorded-only:** build/typecheck + confirm the §8 request/response shape and that live→record reproduces the committed fixtures; classification *quality* needs a live key (non-CI eval), which is out of CI scope. Note: the Go-centric `ledger-flow-phase` workflow is Go-shaped — for the TS service, either pass TS-specific instructions/gate in the phase args or build it with direct agents using a TS gate (`npm i`, `tsc`, `flue build`).
 
 ## 9. v2-preview branch (async / review / provenance / TS agent — parked)
 

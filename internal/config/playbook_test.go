@@ -26,9 +26,13 @@ func TestLoadRealPlaybook(t *testing.T) {
 		"income/product-sales":                  RootIncome,
 		"income/shipping-revenue":               RootIncome,
 		"income/sales-returns":                  RootIncome,
+		"income/discounts-allowances":           RootIncome,
 		"expense/processor-fees":                RootExpense,
 		"expense/gst-input":                     RootExpense,
 		"expense/chargeback-loss":               RootExpense,
+		"assets/cod-receivable":                 RootAssets,
+		"expense/cod-collection-fees":           RootExpense,
+		"expense/reverse-logistics":             RootExpense,
 	}
 	if len(pb.Accounts) != len(wantAccounts) {
 		t.Fatalf("len(Accounts) = %d, want %d", len(pb.Accounts), len(wantAccounts))
@@ -57,13 +61,16 @@ func TestLoadRealPlaybook(t *testing.T) {
 		}
 	}
 
-	for _, name := range []string{"dtc_sale", "razorpay_settlement", "refund_reversal", "chargeback_loss"} {
+	for _, name := range []string{
+		"dtc_sale", "razorpay_settlement", "refund_reversal", "price_adjustment", "chargeback_loss",
+		"cod_sale", "cod_remittance", "rto_fee", "weight_adjustment",
+	} {
 		if _, ok := pb.EntryType(name); !ok {
 			t.Errorf("missing entry type %q", name)
 		}
 	}
-	if len(pb.EntryTypes) != 4 {
-		t.Errorf("len(EntryTypes) = %d, want 4", len(pb.EntryTypes))
+	if len(pb.EntryTypes) != 9 {
+		t.Errorf("len(EntryTypes) = %d, want 9", len(pb.EntryTypes))
 	}
 }
 
@@ -89,7 +96,16 @@ func TestRealPlaybookTemplatesBalance(t *testing.T) {
 		"razorpay_settlement": {"net_deposit": 230808, "fee": 4400, "gst_on_fee": 792, "gross": 236000, "bank_tx_id": 0},
 		// Cr net+gst must equal Dr net + Dr gst.
 		"refund_reversal": {"net": 50000, "gst": 9000, "refund_id": 0},
-		"chargeback_loss": {"net": 50000, "gst": 9000, "dispute_id": 0},
+		// Same credit-note shape as refund_reversal, against discounts-allowances.
+		"price_adjustment": {"net": 16949, "gst": 3051, "refund_id": 0},
+		"chargeback_loss":  {"net": 50000, "gst": 9000, "dispute_id": 0},
+		// COD rail mirrors: cod_sale like dtc_sale (gross = net + gst);
+		// cod_remittance like razorpay_settlement (net_deposit + fee + gst_on_fee = gross).
+		"cod_sale":       {"gross": 150000, "net": 127119, "gst": 22881, "shipment_id": 0},
+		"cod_remittance": {"net_deposit": 141200, "fee": 5000, "gst_on_fee": 900, "gross": 147100, "remittance_id": 0},
+		// rto_fee: Cr net+gst == Dr net + Dr gst. weight_adjustment: single amount both sides.
+		"rto_fee":           {"net": 10000, "gst": 1800, "shipment_id": 0},
+		"weight_adjustment": {"amount": 4000, "shipment_id": 0},
 	}
 
 	for _, e := range pb.EntryTypes {

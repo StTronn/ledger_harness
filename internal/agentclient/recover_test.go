@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/razorpay/close-agent/internal/seed"
+	"github.com/razorpay/ledger-flow/internal/seed"
 )
 
 // hard period under test: the committed missing-metadata period (SPEC §11 Phase 7a).
@@ -98,7 +98,7 @@ func TestGenerateRecoveredDeterministic(t *testing.T) {
 // TestCommittedRecordedByteIdentical asserts the COMMITTED classify.recorded.json
 // for the hard period is byte-identical to a fresh generation from the committed
 // fixtures (SPEC §2, §12). If this fails, either the committed recorded file or the
-// hard substrate drifted; regenerate via `close-agent record-responses`. Skipped
+// hard substrate drifted; regenerate via `ledger-flow record-responses`. Skipped
 // when the committed fixtures are not present (a stripped checkout).
 func TestCommittedRecordedByteIdentical(t *testing.T) {
 	committedPath := RecordedPath(repoRoot, hardWorld, hardPeriod)
@@ -116,7 +116,7 @@ func TestCommittedRecordedByteIdentical(t *testing.T) {
 		t.Fatalf("marshal fresh: %v", err)
 	}
 	if string(fresh) != string(onDisk) {
-		t.Errorf("committed classify.recorded.json is no longer byte-identical to a fresh generation;\nrun: close-agent record-responses --world %s --period %s", hardWorld, hardPeriod)
+		t.Errorf("committed classify.recorded.json is no longer byte-identical to a fresh generation;\nrun: ledger-flow record-responses --world %s --period %s", hardWorld, hardPeriod)
 	}
 }
 

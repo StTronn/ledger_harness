@@ -1,24 +1,26 @@
 package agentclient
 
-import "github.com/razorpay/close-agent/internal/money"
+import (
+	"encoding/json"
+
+	"github.com/razorpay/ledger-flow/internal/money"
+)
 
 // investigate.go is the Go side of the §8 INVESTIGATE-agent interface — the
 // second judgment-agent seam (SPEC §5, §7, §8, §11 Phase 8), parallel to the
 // classify seam in this package. Where classify recovers a single rule-missed
-// EVENT, investigate resolves a single reconciliation BREAK: it inspects the
-// break plus the candidate events and returns the postings the ledger should add
-// to make the books reconcile — or escalates when no posting can resolve it.
+// EVENT, investigate reviews a single reconciliation BREAK: it inspects the
+// break plus the candidate events and returns a recommendation for review — or
+// escalates when the evidence is insufficient.
 //
 //	Investigate(BreakSummary, []EventSummary)
-//	  -> { resolution: {entry_type, params}[], rationale }   // postings to add
+//	  -> { resolution: {entry_type, params}[], rationale }   // recommendation
 //	   | { escalate: true, reason }                          // -> list unresolved
 //
-// exactly the §8 `POST /agents/investigate` contract. As with classify, the
-// agent's ONLY way to affect the ledger is to return {entry_type, params} pairs
-// the Go ledger then validates (balance-or-reject); it never emits raw
-// debits/credits, and it never reads internal/truth — the recovery is derived
-// from the snapshotted agent-input fixtures (refunds.json / orders.json), which
-// the truth-isolation guard enforces at the package boundary.
+// exactly the §8 `POST /agents/investigate` contract. The response is review-only:
+// the agent never writes to the ledger or emits raw debits/credits, and it never
+// reads internal/truth — the recovery context is derived from snapshotted
+// agent-input fixtures (refunds.json / orders.json).
 
 // BreakSummary is the source-agnostic snapshot of one reconcile break the §8
 // investigate agent sees (SPEC §8 in: { break: ReconBreak }). It mirrors the
@@ -41,13 +43,9 @@ type BreakSummary struct {
 	Detail       string      `json:"detail"`
 }
 
-// Posting is one {entry_type, params} the investigate agent proposes to add to
-// the ledger (SPEC §8 out: resolution: {entry_type, params}[]). EventID names the
-// source event the posting books for (e.g. the refund whose reversal was missing)
-// so the orchestrator derives the idempotency key / TxID and attributes the entry
-// to its event for scoring — the SAME discipline classify uses: the agent supplies
-// entry_type + params, the orchestrator owns the bookkeeping (IK/TxID/Ts). Params
-// maps each of the entry type's declared params to its paise value (money.Money).
+// Posting is the existing wire shape for one journal-entry recommendation. EventID
+// names the source event under review; the recommendation is logged but not applied
+// automatically. Params maps the entry type's declared params to paise values.
 type Posting struct {
 	EventID   string                 `json:"event_id"`
 	EntryType string                 `json:"entry_type"`
@@ -56,13 +54,13 @@ type Posting struct {
 
 // InvestigateResult is the §8 POST /agents/investigate response (SPEC §8):
 //
-//	{ resolution: {entry_type, params}[], rationale }   // postings to add
+//	{ resolution: {entry_type, params}[], rationale }   // recommendations to review
 //	| { escalate: true, reason }                        // -> list unresolved
 //
 // EXACTLY ONE shape is meaningful. When Escalate is false and Resolution is
-// non-empty the agent resolved the break (the orchestrator binds+posts each
-// posting and re-reconciles); when Escalate is true the agent declined and the
-// orchestrator LISTS the break unresolved — it never guesses (SPEC §7, §8).
+// non-empty the agent made a recommendation; the orchestrator logs it and keeps
+// the break unresolved. When Escalate is true the agent declined and the
+// orchestrator also lists the break unresolved (SPEC §7, §8).
 type InvestigateResult struct {
 	Resolution []Posting `json:"resolution,omitempty"`
 	Rationale  string    `json:"rationale,omitempty"`
@@ -70,9 +68,8 @@ type InvestigateResult struct {
 	Reason     string    `json:"reason,omitempty"`
 }
 
-// Resolvable reports whether the result carries usable postings (the orchestrator
-// can bind+post) rather than an escalation. It guards both the escalate flag and
-// that at least one posting is present.
+// Resolvable reports whether the result carries a usable recommendation rather than
+// an escalation. The recommendation is still review-only.
 func (r InvestigateResult) Resolvable() bool {
 	return !r.Escalate && len(r.Resolution) > 0
 }
@@ -96,7 +93,9 @@ func EscalatedInvestigation(reason string) InvestigateResult {
 // trace is always returned (even alongside an error or an escalation) so every
 // agent consultation is recorded.
 type InvestigateClient interface {
-	Investigate(brk BreakSummary, candidates []EventSummary) (InvestigateResult, InvestigateTrace, error)
+	// context is the deterministic recovery-engine bundle. The agent may use
+	// optional exploration tools for deeper novel-case lookups.
+	Investigate(brk BreakSummary, candidates []EventSummary, context ...json.RawMessage) (InvestigateResult, InvestigateTrace, error)
 	// Mode reports which transport this client is (replay/live), for the trace and
 	// operator-facing reporting.
 	Mode() Mode

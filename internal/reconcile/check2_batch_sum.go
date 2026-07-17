@@ -3,7 +3,7 @@ package reconcile
 import (
 	"fmt"
 
-	"github.com/razorpay/close-agent/internal/money"
+	"github.com/razorpay/ledger-flow/internal/money"
 )
 
 // checkBatchSum is SPEC §7 check #2 (Batch-sum): for each settlement, the batch

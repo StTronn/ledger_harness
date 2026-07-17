@@ -28,7 +28,7 @@
 // classify logic.
 package truth
 
-import "github.com/razorpay/close-agent/internal/money"
+import "github.com/razorpay/ledger-flow/internal/money"
 
 // Side is the debit/credit side a ground-truth line sits on. It mirrors
 // ledger.Side ("Dr"/"Cr") but is redeclared here so the truth schema does not

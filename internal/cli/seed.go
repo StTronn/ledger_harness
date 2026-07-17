@@ -5,18 +5,18 @@ import (
 	"io"
 	"os"
 
-	"github.com/razorpay/close-agent/internal/seed"
+	"github.com/razorpay/ledger-flow/internal/seed"
 	"github.com/spf13/cobra"
 )
 
-// newSeedCmd: `close-agent seed --world <string> --period <YYYY-MM>` (SPEC §10).
+// newSeedCmd: `ledger-flow seed --world <string> --period <YYYY-MM>` (SPEC §10).
 // It deterministically generates the substrate for one period — Razorpay-shaped
 // fixtures + an independent bank feed + the hidden truth GL — under
 // worlds/<world>/<period>/ (SPEC §2 Phase 2, §4.4). Re-running with the same
 // flags overwrites with byte-identical content.
 func newSeedCmd(out io.Writer) *cobra.Command {
 	var world, period, root, inject string
-	var ambiguity bool
+	var ambiguity, partialRefunds, cod bool
 	cmd := &cobra.Command{
 		Use:   "seed",
 		Short: "Generate a deterministic fixture period (substrate + bank-feed + truth)",
@@ -33,8 +33,10 @@ func newSeedCmd(out io.Writer) *cobra.Command {
 				root = wd
 			}
 			res, err := seed.SeedWith(root, world, period, seed.Options{
-				Inject:    seed.Inject(inject),
-				Ambiguity: ambiguity,
+				Inject:         seed.Inject(inject),
+				Ambiguity:      ambiguity,
+				PartialRefunds: partialRefunds,
+				COD:            cod,
 			})
 			if err != nil {
 				return err
@@ -50,6 +52,10 @@ func newSeedCmd(out io.Writer) *cobra.Command {
 		fmt.Sprintf("seed a reconciliation break into the fixtures (known: %v); empty = clean", seed.KnownInjects))
 	cmd.Flags().BoolVar(&ambiguity, "ambiguity", false,
 		"strip gst_rate from a deterministic ~15% of payments (the missing-metadata long tail the agent recovers from orders.json)")
+	cmd.Flags().BoolVar(&partialRefunds, "partial-refunds", false,
+		"seed the partial-refund judgment world: orders carry line items and the first three refunds become the R1 (item-match) / R2 (goodwill) / R3 (unexplained) spectrum")
+	cmd.Flags().BoolVar(&cod, "cod", false,
+		"append the cash-on-delivery rail: delivered shipments + one RTO + a netted courier remittance (courier-feed.json); the RTO fee + weight-dispute deductions leave the cod-receivable short — the investigate residual")
 	return cmd
 }
 
@@ -78,5 +84,9 @@ func printSeedResult(out io.Writer, res seed.Result) {
 	if res.Ambiguity.Enabled {
 		fmt.Fprintf(out, "  ambiguity: stripped gst_rate from %d/%d payments (recoverable from orders.json; truth GL unchanged)\n",
 			res.Ambiguity.NumStripped, res.NumPayments)
+	}
+	for _, d := range res.Partial.Refunds {
+		fmt.Fprintf(out, "  partial refund [%s]: %s on payment %s (order %s)\n",
+			d.Class, d.RefundID, d.PaymentID, d.OrderID)
 	}
 }

@@ -8,7 +8,7 @@ import (
 )
 
 // truthPkg is the import path of the package whose importers we police.
-const truthPkg = "github.com/razorpay/close-agent/internal/truth"
+const truthPkg = "github.com/razorpay/ledger-flow/internal/truth"
 
 // allowedImporters is the closed set of packages permitted to import
 // internal/truth (SPEC §4.4, §12: "truth/ must never be read by ingest, classify,
@@ -23,12 +23,12 @@ const truthPkg = "github.com/razorpay/close-agent/internal/truth"
 // being violated, and this test fails the build. When the scorer package lands,
 // add its import path here (and nothing else).
 var allowedImporters = map[string]bool{
-	"github.com/razorpay/close-agent/internal/truth": true,
-	"github.com/razorpay/close-agent/internal/seed":  true,
+	"github.com/razorpay/ledger-flow/internal/truth": true,
+	"github.com/razorpay/ledger-flow/internal/seed":  true,
 	// The scorer is the ONLY reader of truth/gl.json (SPEC §4.4, §9). It loads the
 	// ground truth to diff the produced ledger against it; nothing it imports
 	// (ingest/classify/ledger) reaches back into truth, so the boundary holds.
-	"github.com/razorpay/close-agent/internal/score": true,
+	"github.com/razorpay/ledger-flow/internal/score": true,
 }
 
 // goListPackage is the subset of `go list -json` output we need: a package's
@@ -48,7 +48,7 @@ type goListPackage struct {
 // boundaries) that no non-scorer code path can read truth/".
 func TestTruthIsolation(t *testing.T) {
 	out, err := exec.Command("go", "list", "-deps", "-test", "-json",
-		"github.com/razorpay/close-agent/...").Output()
+		"github.com/razorpay/ledger-flow/...").Output()
 	if err != nil {
 		// Surface stderr from `go list` if available, for a useful failure.
 		if ee, ok := err.(*exec.ExitError); ok {
@@ -65,8 +65,8 @@ func TestTruthIsolation(t *testing.T) {
 			t.Fatalf("decode go list output: %v", err)
 		}
 		// Only police packages within this module.
-		if !strings.HasPrefix(p.ImportPath, "github.com/razorpay/close-agent/") &&
-			p.ImportPath != "github.com/razorpay/close-agent" {
+		if !strings.HasPrefix(p.ImportPath, "github.com/razorpay/ledger-flow/") &&
+			p.ImportPath != "github.com/razorpay/ledger-flow" {
 			continue
 		}
 		all := append(append(append([]string{}, p.Imports...), p.TestImports...), p.XTestImports...)

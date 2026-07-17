@@ -7,11 +7,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/razorpay/close-agent/internal/truth"
+	"github.com/razorpay/ledger-flow/internal/truth"
+	"github.com/razorpay/ledger-flow/internal/world/feeds"
 )
 
 // Seed is the top-level seeder entry point used by the CLI (SPEC §10
-// `close-agent seed`): it generates the substrate for (world, period) and writes
+// `ledger-flow seed`): it generates the substrate for (world, period) and writes
 // every artifact under root/worlds/<world>/<period>/ (SPEC §4.4). It returns the
 // Result so the caller can report what was written. Re-running with the same
 // (world, period) overwrites the files with byte-identical content (the
@@ -34,7 +35,7 @@ func SeedWith(root, world, period string, opts Options) (Result, error) {
 		return Result{}, err
 	}
 
-	fx, feed, gl, inj, amb, err := GenerateWith(world, period, opts)
+	fx, feed, gl, res, err := GenerateFull(world, period, opts)
 	if err != nil {
 		return Result{}, err
 	}
@@ -53,8 +54,9 @@ func SeedWith(root, world, period string, opts Options) (Result, error) {
 		NumGLEntries:   len(gl.Entries),
 		BankCredits:    len(feed.Credits),
 		BankDebits:     len(feed.Debits),
-		Inject:         inj,
-		Ambiguity:      amb,
+		Inject:         res.Inject,
+		Ambiguity:      res.Ambiguity,
+		Partial:        res.Partial,
 	}, nil
 }
 
@@ -72,6 +74,7 @@ type Result struct {
 	BankDebits     int
 	Inject         InjectResult    // what break (if any) was seeded; zero value = clean
 	Ambiguity      AmbiguityResult // missing-metadata long tail seeded; zero value = none
+	Partial        PartialResult   // partial-refund designations; zero value = none
 }
 
 // writeAll creates the directory tree and writes the six artifact files. The
@@ -99,9 +102,24 @@ func writeAll(l Layout, fx Fixtures, feed BankFeed, gl truth.GL) error {
 		{l.DisputesPath(), fx.Disputes},
 		{l.OrdersPath(), fx.Orders},
 		{l.BankFeedPath(), feed},
+		// ratecard.json is the merchant's CONTRACTED fee schedule — the validation
+		// table the fee-tier policy checks settlements against. It is emitted from
+		// the SAME constants the generator prices fees with (feeBps,
+		// razorpayGSTRate), so on a clean period expected == actual by
+		// construction; a future mis-booked-fee inject perturbs the fixtures, not
+		// this card.
+		{l.RateCardPath(), rateCardFor(fx)},
 	}
 	for _, w := range writes {
 		if err := writeJSONFile(w.path, w.v); err != nil {
+			return err
+		}
+	}
+
+	// The COD rail emits its own feed (cod.go). Written only for COD periods, so a
+	// Razorpay-only period has no courier-feed.json and ingest reads none.
+	if fx.Courier != nil {
+		if err := writeJSONFile(l.CourierFeedPath(), fx.Courier); err != nil {
 			return err
 		}
 	}
@@ -115,6 +133,29 @@ func writeAll(l Layout, fx Fixtures, feed BankFeed, gl truth.GL) error {
 		return err
 	}
 	return nil
+}
+
+// rateCardFor builds the merchant's contracted fee schedule for a period. It is
+// emitted from the SAME constants the generator prices fees with, so expected ==
+// actual by construction. The razorpay channel is always present; a COD period
+// (fx.Courier set) adds the courier channel with its flat COD collection fee and
+// RTO fee, the table the COD fee/RTO policies validate deductions against.
+func rateCardFor(fx Fixtures) feeds.RateCardFile {
+	rc := feeds.RateCardFile{
+		SchemaVersion: 1,
+		Channels: []feeds.Channel{
+			{Channel: "razorpay", FeeBps: feeBps, FeeGSTRate: razorpayGSTRate},
+		},
+	}
+	if fx.Courier != nil {
+		rc.Channels = append(rc.Channels, feeds.Channel{
+			Channel:     codCourierChannel,
+			FeeGSTRate:  razorpayGSTRate,
+			CODFeePaise: codCollectionFeePaise,
+			RTOFeePaise: rtoFeeNetPaise,
+		})
+	}
+	return rc
 }
 
 // writeJSONFile marshals v to stable, indented JSON and writes it atomically to

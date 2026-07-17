@@ -8,11 +8,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/razorpay/close-agent/internal/config"
+	"github.com/razorpay/ledger-flow/internal/config"
 	"github.com/spf13/cobra"
 )
 
-// newShowCmd: `close-agent show <playbook|trace>`. A parent command with two
+// newShowCmd: `ledger-flow show <playbook|trace>`. A parent command with two
 // sub-subcommands per SPEC §10:
 //
 //	show playbook        print the entry types (the schema file)
@@ -26,7 +26,7 @@ func newShowCmd(out io.Writer) *cobra.Command {
 	return cmd
 }
 
-// newShowPlaybookCmd: `close-agent show playbook` — loads the playbook schema
+// newShowPlaybookCmd: `ledger-flow show playbook` — loads the playbook schema
 // file (chart of accounts + entry types) and prints it. Loading runs the full
 // load-time validation, so this command also proves the playbook is well-formed.
 func newShowPlaybookCmd(out io.Writer) *cobra.Command {
@@ -55,7 +55,7 @@ func newShowPlaybookCmd(out io.Writer) *cobra.Command {
 // rather than crashing (the gate's "handles a missing trace gracefully").
 const traceFileName = "trace.json"
 
-// newShowTraceCmd: `close-agent show trace <path>` — prints the recorded agent
+// newShowTraceCmd: `ledger-flow show trace <path>` — prints the recorded agent
 // trajectory under the given run path. The agent (and therefore traces) lands in
 // Phase 7; in the Phase-6 deterministic product there are no traces, so a missing
 // trace is the EXPECTED, non-error outcome and is reported as such (not a crash,

@@ -1,4 +1,4 @@
-// Package money is the one and only money type in close-agent.
+// Package money is the one and only money type in ledger-flow.
 //
 // INVARIANT (SPEC §1 golden rule, §4, §13.8): all money in this system is
 // integer minor units — paise — carried as an int64. Floats NEVER touch money,

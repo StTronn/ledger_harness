@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/razorpay/close-agent/internal/config"
+	"github.com/razorpay/ledger-flow/internal/config"
 )
 
 // loadRealPlaybook loads the committed config/playbook.json relative to this

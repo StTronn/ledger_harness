@@ -4,7 +4,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/razorpay/close-agent/internal/truth"
+	"github.com/razorpay/ledger-flow/internal/truth"
 )
 
 // render.go produces the short, human-readable Got/Want strings stamped on an

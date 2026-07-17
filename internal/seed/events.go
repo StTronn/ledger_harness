@@ -3,7 +3,7 @@ package seed
 import (
 	"fmt"
 
-	"github.com/razorpay/close-agent/internal/money"
+	"github.com/razorpay/ledger-flow/internal/money"
 )
 
 // This file holds the per-event constructors (one Razorpay-shaped object each)
@@ -54,7 +54,7 @@ const orderLeadSeconds = 300
 // from when a payment's own notes have been stripped of it. The order is NOT
 // truth: it is another snapshotted agent-input fixture.
 func (g *generator) makeOrder(pay Payment) Order {
-	return Order{
+	o := Order{
 		Entity:    "order",
 		ID:        pay.OrderID,
 		Amount:    pay.Amount,
@@ -64,6 +64,18 @@ func (g *generator) makeOrder(pay Payment) Order {
 		CreatedAt: pay.CreatedAt - orderLeadSeconds,
 		Notes:     pay.Notes,
 	}
+	// Partial-refunds world: the order carries its two-line-item breakdown (the
+	// matching substrate for the refund-intent judgment, partial.go). Amounts are
+	// derived arithmetically from the order total — no RNG draw — so the clean
+	// stream is untouched; both items carry the order's (single) rate.
+	if g.partial {
+		i0, i1 := orderItemSplit(pay.Amount)
+		o.Items = []OrderItem{
+			{SKU: pay.Notes.SKU, Amount: i0, GSTRate: pay.Notes.GSTRate},
+			{SKU: pay.Notes.SKU + "-ADDON", Amount: i1, GSTRate: pay.Notes.GSTRate},
+		}
+	}
+	return o
 }
 
 // receiptFor derives a deterministic merchant receipt number from an order id,
@@ -174,12 +186,23 @@ func (g *generator) addSaleEntry(pay Payment, net, gst money.Money) error {
 //	Dr liabilities/gst-output-payable        {gst}
 //	Cr assets/razorpay-settlement-receivable {net+gst}
 func (g *generator) addRefundEntry(rf Refund, net, gst money.Money) error {
+	return g.addRefundEntryAs("refund_reversal", rf, net, gst)
+}
+
+// addRefundEntryAs binds and posts a refund-shaped truth-GL entry under the given
+// entry type. refund_reversal and price_adjustment share the same params
+// ({net, gst, refund_id}) and the same Cr-receivable shape, differing only in the
+// contra-revenue account their templates name — the partial-refunds world books
+// R2/R3 (goodwill / unexplained) as price_adjustment while R1 stays a
+// refund_reversal. The IK keeps the canonical "refund:"+id scheme either way (one
+// refund, one entry, whichever treatment truth assigns it).
+func (g *generator) addRefundEntryAs(entryType string, rf Refund, net, gst money.Money) error {
 	params := map[string]money.Money{
 		"net":       net,
 		"gst":       gst,
 		"refund_id": txIDParam(),
 	}
-	return g.binder.bind("refund_reversal", "refund:"+rf.ID, rf.ID, rf.ID, rf.CreatedAt, params)
+	return g.binder.bind(entryType, "refund:"+rf.ID, rf.ID, rf.ID, rf.CreatedAt, params)
 }
 
 // addSettlementEntry binds and posts the razorpay_settlement truth-GL entry for a

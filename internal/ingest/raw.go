@@ -30,7 +30,7 @@
 // (int64). No float type touches money in this package.
 package ingest
 
-import "github.com/razorpay/close-agent/internal/money"
+import "github.com/razorpay/ledger-flow/internal/money"
 
 // RawPayment is a Razorpay-shaped captured payment (id prefix pay_). It mirrors
 // the fixture JSON written by the seeder (and the live api payment object): the
@@ -110,7 +110,8 @@ type RawDispute struct {
 // notes, keeping the journal byte-stable (SPEC §12 determinism).
 type RawNotes struct {
 	SKU     string `json:"sku"`
-	GSTRate string `json:"gst_rate"` // percent as a string, e.g. "18"
+	GSTRate string `json:"gst_rate"`         // percent as a string, e.g. "18"
+	Reason  string `json:"reason,omitempty"` // optional ops annotation (e.g. "goodwill" on a manual partial refund)
 }
 
 // RawBankFeed is the independent second record of cash movement (SPEC §4.4): the
@@ -135,15 +136,75 @@ type RawBankFeedLine struct {
 	Ref    string      `json:"ref"`    // UTR (credit) or dispute id (debit) to match on
 }
 
+// RawCourierFeed is the COD rail's analogue of the Razorpay fixtures (ROADMAP
+// §8.3): the report a logistics aggregator (Shiprocket / Delhivery / …) gives the
+// merchant, listing every COD shipment's lifecycle and the netted remittance(s)
+// the courier wired. It is OPTIONAL — a Razorpay-only period has no
+// courier-feed.json, so ingest leaves this zero and no COD events are produced.
+type RawCourierFeed struct {
+	Channel     string          `json:"channel"`     // courier/aggregator name, e.g. "delhivery"
+	Period      string          `json:"period"`      // YYYY-MM this feed covers
+	Shipments   []RawShipment   `json:"shipments"`   // every COD shipment's lifecycle
+	Remittances []RawRemittance `json:"remittances"` // the courier's netted payouts
+}
+
+// RawShipment is one COD parcel's lifecycle (id prefix shp_). Status is the
+// terminal state: "delivered" (cash collected -> a cod_sale event) or "rto"
+// (returned to origin, no cash — lifecycle only, not a journal event; the
+// harness reads it to confirm an RTO fee is legitimate). CODAmount is the gross
+// the customer pays at the door (GST-inclusive paise); it is 0 for an RTO.
+type RawShipment struct {
+	Entity     string      `json:"entity"`      // always "shipment"
+	ID         string      `json:"id"`          // shp_XXXXXXXXXXXXXX
+	OrderID    string      `json:"order_id"`    // order_... this parcel fulfils
+	CODAmount  money.Money `json:"cod_amount"`  // gross collected at door, paise (0 for rto)
+	Status     string      `json:"status"`      // "delivered" | "rto"
+	ShippedAt  int64       `json:"shipped_at"`  // Unix seconds dispatched
+	ResolvedAt int64       `json:"resolved_at"` // Unix seconds delivered or returned
+	Notes      RawNotes    `json:"notes"`       // sku + gst_rate
+}
+
+// RawRemittance is one courier payout (id prefix rem_): the courier wires the
+// COD cash it collected, having netted its per-shipment collection fee + GST and
+// any per-shipment deductions (RTO fees, weight disputes). GrossCollected is the
+// total cash collected for this batch; NetDeposit is what actually hits the bank.
+// By construction GrossCollected = NetDeposit + CollectionFee + GSTOnFee +
+// Σ Deductions.
+type RawRemittance struct {
+	Entity         string         `json:"entity"`          // always "remittance"
+	ID             string         `json:"id"`              // rem_XXXXXXXXXXXXXX
+	GrossCollected money.Money    `json:"gross_collected"` // total COD cash collected, paise
+	CollectionFee  money.Money    `json:"collection_fee"`  // courier's per-shipment COD fee, paise
+	GSTOnFee       money.Money    `json:"gst_on_fee"`      // GST on the collection fee, paise
+	NetDeposit     money.Money    `json:"net_deposit"`     // cash wired to bank, paise
+	UTR            string         `json:"utr"`             // bank UTR; matches a bank-feed credit ref
+	CreatedAt      int64          `json:"created_at"`      // Unix seconds (remittance date)
+	Deductions     []RawDeduction `json:"deductions"`      // per-shipment charges netted out
+}
+
+// RawDeduction is one line the courier netted out of a remittance beyond its
+// standard collection fee: an RTO fee (Code "RTO_CHG") or a weight-dispute
+// adjustment (Code "WT_ADJ"), tied to the shipment it concerns. These are the
+// charges the deterministic rules cannot book (no per-event rule fits a deduction
+// line), so they fall to the investigate agent, which decomposes the remittance.
+type RawDeduction struct {
+	ID         string      `json:"id"`          // ded_... unique id (the entry's event id when booked)
+	Code       string      `json:"code"`        // "RTO_CHG" | "WT_ADJ"
+	ShipmentID string      `json:"shipment_id"` // shp_... this charge concerns
+	Amount     money.Money `json:"amount"`      // gross deducted, paise
+}
+
 // Raw is the bundle ingest returns: the four Razorpay-shaped slices plus the
 // independent bank feed for one (world, period). The slices feed normalize into
 // the §4.3 event journal; BankFeed is held for Phase 5 reconcile and is NOT part
-// of the journal. Slices are non-nil even when a fixture file is an empty array,
-// so callers can range over them without nil checks.
+// of the journal. CourierFeed is the optional COD rail (zero for Razorpay-only
+// periods). Slices are non-nil even when a fixture file is an empty array, so
+// callers can range over them without nil checks.
 type Raw struct {
 	Payments    []RawPayment
 	Refunds     []RawRefund
 	Settlements []RawSettlement
 	Disputes    []RawDispute
 	BankFeed    RawBankFeed
+	CourierFeed RawCourierFeed
 }

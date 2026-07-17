@@ -90,6 +90,18 @@ type Options struct {
 	// Ambiguity, when true, strips gst_rate from a deterministic ~15% of payments
 	// (keeping sku + order_id), producing the rule-miss long tail the agent fills.
 	Ambiguity bool
+	// PartialRefunds, when true, seeds the partial-refund judgment world (see
+	// partial.go): orders carry line items and the first three refunds become the
+	// R1/R2/R3 judgment spectrum. Unlike Inject/Ambiguity this is a GENERATION
+	// knob, not a post-generation transform — the partial amounts flow through
+	// batch netting and truth books per-class entries.
+	PartialRefunds bool
+	// COD, when true, appends the cash-on-delivery rail to the month (see cod.go):
+	// delivered shipments + one RTO + a netted courier remittance, emitting
+	// courier-feed.json. Like PartialRefunds this is a GENERATION knob (truth books
+	// per-class COD entries); the RTO fee + weight-dispute deductions the rules
+	// cannot book leave the cod-receivable short — the investigate residual.
+	COD bool
 }
 
 // KnownInjects is the closed set of supported injection kinds, used by the CLI to

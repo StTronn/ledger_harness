@@ -32,8 +32,8 @@ package score
 import (
 	"sort"
 
-	"github.com/razorpay/close-agent/internal/money"
-	"github.com/razorpay/close-agent/internal/truth"
+	"github.com/razorpay/ledger-flow/internal/money"
+	"github.com/razorpay/ledger-flow/internal/truth"
 )
 
 // Line is one produced posting to compare against truth: a side ("Dr"/"Cr"), an

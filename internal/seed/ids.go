@@ -13,6 +13,9 @@ const (
 	prefixSettlement = "setl_"
 	prefixDispute    = "disp_"
 	prefixOrder      = "order_"
+	prefixShipment   = "shp_"
+	prefixRemittance = "rem_"
+	prefixDeduction  = "ded_"
 
 	// idTokenLen is the length of the base62 token following the prefix, matching
 	// Razorpay's 14-character ids.
@@ -53,3 +56,6 @@ func (g *idGen) refund() string     { return prefixRefund + g.token() }
 func (g *idGen) settlement() string { return prefixSettlement + g.token() }
 func (g *idGen) dispute() string    { return prefixDispute + g.token() }
 func (g *idGen) order() string      { return prefixOrder + g.token() }
+func (g *idGen) shipment() string   { return prefixShipment + g.token() }
+func (g *idGen) remittance() string { return prefixRemittance + g.token() }
+func (g *idGen) deduction() string  { return prefixDeduction + g.token() }

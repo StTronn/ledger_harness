@@ -3,8 +3,8 @@ package score
 import (
 	"testing"
 
-	"github.com/razorpay/close-agent/internal/money"
-	"github.com/razorpay/close-agent/internal/truth"
+	"github.com/razorpay/ledger-flow/internal/money"
+	"github.com/razorpay/ledger-flow/internal/truth"
 )
 
 // tline builds a truth.Line for table rows.

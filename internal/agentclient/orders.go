@@ -1,88 +1,39 @@
 package agentclient
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"os"
-	"path/filepath"
-
-	"github.com/razorpay/close-agent/internal/money"
+	"github.com/razorpay/ledger-flow/internal/world/feeds"
 )
 
-// orders.go reads orders.json — the LEGITIMATE, snapshotted recovery source the
-// agent "fetches the order" from (SPEC §1, §2) — and NOTHING from truth (SPEC
-// §4.4). It mirrors the on-disk order shape (the seeder's seed.Order / a Razorpay
-// order object) as a local type so agentclient does not depend on internal/seed,
-// and indexes orders by id for recovery.
+// orders.go re-exports the orders recovery source for this package's consumers.
+// The CANONICAL reader lives in internal/harness/feeds — one reader per feed, so
+// the on-disk shape cannot drift between the recorded-response generator, the
+// ledger graph, and the orchestrator. These wrappers keep agentclient's existing
+// surface (OrderGSTRates / OrderInfos) stable for its callers. Nothing here is
+// ever ground truth (SPEC §4.4).
 
-// order is the subset of a Razorpay-shaped order this package needs to recover a
-// payment's tax metadata: the order id, its amount, and its authoritative notes
-// (sku + gst_rate). Unknown fields in the file are tolerated so a richer order
-// object still decodes.
-type order struct {
-	ID     string      `json:"id"`
-	Amount money.Money `json:"amount"`
-	Notes  orderNotes  `json:"notes"`
+// OrderItem mirrors feeds.OrderItem for agentclient's exported surface.
+type OrderItem = feeds.OrderItem
+
+// OrderInfo mirrors feeds.OrderInfo for agentclient's exported surface.
+type OrderInfo = feeds.OrderInfo
+
+// OrderInfos loads orders.json for (world, period) under root: the order-level
+// recovery view (rate + line items). Delegates to the canonical feeds reader.
+func OrderInfos(root, world, period string) (map[string]OrderInfo, error) {
+	return feeds.Orders(root, world, period)
 }
 
-// orderNotes is an order's authoritative notes: the product SKU and the GST rate
-// percent as a string ("18", "12", "5"). The order keeps the TRUE rate even after
-// a payment's own notes have been stripped, which is what makes recovery possible.
-type orderNotes struct {
-	SKU     string `json:"sku"`
-	GSTRate string `json:"gst_rate"`
-}
-
-// ordersIndex maps order id -> order for O(1) recovery lookups.
-type ordersIndex map[string]order
-
-// readOrders loads worlds/<world>/<period>/razorpay/orders.json under root and
-// indexes it by order id. orders.json is an agent INPUT (under razorpay/), never
-// ground truth. A missing or malformed file is a clear error: the recovery source
-// is required to generate the recorded responses, so its absence must fail loudly
-// rather than silently recover nothing.
-func readOrders(root, world, period string) (ordersIndex, error) {
-	path := filepath.Join(root, "worlds", world, period, "razorpay", "orders.json")
-	data, err := os.ReadFile(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("agentclient: orders recovery source %s not found", path)
-		}
-		return nil, fmt.Errorf("agentclient: read %s: %w", path, err)
-	}
-	var orders []order
-	dec := json.NewDecoder(bytes.NewReader(data))
-	if err := dec.Decode(&orders); err != nil {
-		return nil, fmt.Errorf("agentclient: decode %s: %w", path, err)
-	}
-	if dec.More() {
-		return nil, fmt.Errorf("agentclient: %s has trailing data after the JSON value", path)
-	}
-	idx := make(ordersIndex, len(orders))
-	for _, o := range orders {
-		if _, dup := idx[o.ID]; !dup {
-			idx[o.ID] = o
-		}
-	}
-	return idx, nil
-}
-
-// OrderGSTRates loads orders.json for (world, period) under root and returns a
-// map of order id -> the order's authoritative gst_rate string ("18", "12", …).
-// It is the legitimate, snapshotted tax-metadata recovery source (SPEC §1, §2) the
-// investigate generator uses to recover an unbooked refund's rate from its parent
-// order — the SAME source the classify recovery fetches from, exposed here so the
-// orchestrator (internal/closer) can drive the investigate recovery without
-// re-reading orders.json itself. It reads no truth (SPEC §4.4).
+// OrderGSTRates loads orders.json and returns order id -> authoritative
+// gst_rate string — the legitimate, snapshotted tax-metadata recovery source
+// (SPEC §1, §2). Delegates to the canonical feeds reader.
 func OrderGSTRates(root, world, period string) (map[string]string, error) {
-	idx, err := readOrders(root, world, period)
+	infos, err := feeds.Orders(root, world, period)
 	if err != nil {
 		return nil, err
 	}
-	m := make(map[string]string, len(idx))
-	for id, o := range idx {
-		m[id] = o.Notes.GSTRate
+	m := make(map[string]string, len(infos))
+	for id, o := range infos {
+		m[id] = o.GSTRate
 	}
 	return m, nil
 }

@@ -4,10 +4,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/razorpay/close-agent/internal/config"
-	"github.com/razorpay/close-agent/internal/ledger"
-	"github.com/razorpay/close-agent/internal/money"
-	"github.com/razorpay/close-agent/internal/truth"
+	"github.com/razorpay/ledger-flow/internal/config"
+	"github.com/razorpay/ledger-flow/internal/ledger"
+	"github.com/razorpay/ledger-flow/internal/money"
+	"github.com/razorpay/ledger-flow/internal/truth"
 )
 
 // loadPlaybook loads the committed playbook for cross-validating fixtures against

@@ -3,10 +3,12 @@ package agentclient
 import (
 	"fmt"
 
-	"github.com/razorpay/close-agent/internal/classify"
-	"github.com/razorpay/close-agent/internal/gstsplit"
-	"github.com/razorpay/close-agent/internal/ingest"
-	"github.com/razorpay/close-agent/internal/money"
+	"github.com/razorpay/ledger-flow/internal/gstsplit"
+	"github.com/razorpay/ledger-flow/internal/ingest"
+	"github.com/razorpay/ledger-flow/internal/ledgerflow/posting"
+	"github.com/razorpay/ledger-flow/internal/ledgerflow/recovery/policychecks"
+	"github.com/razorpay/ledger-flow/internal/money"
+	"github.com/razorpay/ledger-flow/internal/world/feeds"
 )
 
 // recover.go is the DETERMINISTIC generator that builds the committed
@@ -19,7 +21,7 @@ import (
 // produced had the rate been present.
 //
 // Drift-proof by construction: the misses are found by running the REAL rule
-// engine (classify.Classify), and the GST split uses the REAL shared
+// engine (posting.Classify), and the GST split uses the REAL shared
 // gstsplit.SplitInclusive — the same two functions the deterministic spine and the
 // seeder's truth GL use — so a recovered response equals truth to the paise, and
 // replaying it raises the score to ~100% exactly. This package NEVER imports
@@ -46,7 +48,7 @@ func GenerateRecorded(root, world, period string) (RecordedFile, error) {
 	if err != nil {
 		return RecordedFile{}, err
 	}
-	orders, err := readOrders(root, world, period)
+	orders, err := feeds.Orders(root, world, period)
 	if err != nil {
 		return RecordedFile{}, err
 	}
@@ -57,12 +59,20 @@ func GenerateRecorded(root, world, period string) (RecordedFile, error) {
 		Period:        period,
 		Responses:     make([]RecordedResponse, 0),
 	}
+	// payment id -> order id, for the refund -> payment -> order walk the
+	// partial-refund recovery needs (a refund object carries no order_id).
+	payOrder := make(map[string]string)
 	for _, ev := range events {
-		_, ok, reason := classify.Classify(ev)
+		if ev.Type == ingest.EventPayment {
+			payOrder[ev.ID] = ev.Links.OrderID
+		}
+	}
+	for _, ev := range events {
+		_, ok, reason := posting.Classify(ev)
 		if ok {
 			continue // the rule engine handled it; the agent is not consulted.
 		}
-		f.Responses = append(f.Responses, recoverMiss(ev, reason, orders))
+		f.Responses = append(f.Responses, recoverMiss(ev, reason, orders, payOrder))
 	}
 	f.sortResponses()
 	return f, nil
@@ -75,7 +85,11 @@ func GenerateRecorded(root, world, period string) (RecordedFile, error) {
 // order without a usable rate) becomes a recorded escalation with a clear reason
 // (the rule-miss reason is folded in for context), so the fixture is honest about
 // what could not be recovered.
-func recoverMiss(ev ingest.NormalizedEvent, missReason string, orders ordersIndex) RecordedResponse {
+func recoverMiss(ev ingest.NormalizedEvent, missReason string, orders map[string]feeds.OrderInfo, payOrder map[string]string) RecordedResponse {
+	// PARTIAL refund (the judgment world): decide via the order's line items.
+	if ev.Type == ingest.EventRefund && ev.ParentAmount != nil {
+		return recoverPartialRefund(ev, orders, payOrder)
+	}
 	if ev.Type != ingest.EventPayment {
 		return escalation(ev.ID, fmt.Sprintf("rule miss %q on %s event is not a payment the classify agent recovers in v1", missReason, ev.Type))
 	}
@@ -84,9 +98,9 @@ func recoverMiss(ev ingest.NormalizedEvent, missReason string, orders ordersInde
 	if !ok {
 		return escalation(ev.ID, fmt.Sprintf("no order %q to recover gst_rate from (rule miss: %s)", ev.Links.OrderID, missReason))
 	}
-	rate, ok := parseRatePercent(o.Notes.GSTRate)
+	rate, ok := parseRatePercent(o.GSTRate)
 	if !ok || rate <= 0 {
-		return escalation(ev.ID, fmt.Sprintf("order %q has no usable gst_rate %q (rule miss: %s)", o.ID, o.Notes.GSTRate, missReason))
+		return escalation(ev.ID, fmt.Sprintf("order %q has no usable gst_rate %q (rule miss: %s)", ev.Links.OrderID, o.GSTRate, missReason))
 	}
 
 	// Recovered exactly as classifyPayment would have, had the rate been present:
@@ -104,8 +118,81 @@ func recoverMiss(ev ingest.NormalizedEvent, missReason string, orders ordersInde
 			"payment_id": 0, // tx_param placeholder; the id string travels on the entry's TxID
 		},
 		Rationale: fmt.Sprintf("payment %s arrived with no gst_rate; fetched order %s, recovered gst_rate=%d%%, and booked the dtc_sale at the recovered rate",
-			ev.ID, o.ID, rate),
+			ev.ID, ev.Links.OrderID, rate),
 		ToolsUsed: []string{orderFetchTool},
+	}
+}
+
+// recoverPartialRefund decides one partial refund the way the agent's policy
+// does, against the order's line items (the matching substrate):
+//
+//  1. an ops ANNOTATION (notes.reason, e.g. "goodwill") wins: a manually
+//     annotated credit is a human/policy call — escalate, never book;
+//  2. exactly ONE line item (or pair, capped at pairs) summing to the refund is
+//     strong evidence of that item returned — book refund_reversal at the
+//     matched item's rate, citing the item;
+//  3. ambiguity (several matches) or NO match — escalate; the agent never
+//     guesses, and an unexplained partial credit is exactly what a human review
+//     queue is for.
+//
+// The walk is refund -> payment -> order (a refund carries no order_id), all
+// from snapshotted agent inputs — never truth.
+func recoverPartialRefund(ev ingest.NormalizedEvent, orders map[string]feeds.OrderInfo, payOrder map[string]string) RecordedResponse {
+	if ev.Notes != nil && ev.Notes.Reason != "" {
+		return escalation(ev.ID, fmt.Sprintf(
+			"partial refund %s is annotated %q — a goodwill/manual credit is a human policy call, not an agent booking", ev.ID, ev.Notes.Reason))
+	}
+	orderID := payOrder[ev.Links.PaymentID]
+	o, ok := orders[orderID]
+	if !ok || len(o.Items) == 0 {
+		return escalation(ev.ID, fmt.Sprintf("partial refund %s has no order line items to match against", ev.ID))
+	}
+
+	// One matcher, no drift: the SAME pure matcher the bundler's policy layer
+	// runs (policychecks.MatchLineItems), projected onto this generator's
+	// (rate, cite) shape. The cite strings reproduce the committed fixtures
+	// byte-for-byte: "<order>/<path>" plus the matched item's SKU for a single.
+	type match struct {
+		rate int
+		cite string
+	}
+	var matches []match
+	for _, c := range policychecks.MatchLineItems(ev.Amount, orderID, o.Items) {
+		if c.Kind == policychecks.CandidateNoMatch {
+			continue
+		}
+		rate, ok := parseRatePercent(c.GSTRate)
+		if !ok || rate <= 0 {
+			continue
+		}
+		cite := c.Source.Object + "/" + c.Source.Path
+		if c.Kind == policychecks.CandidateItemMatch {
+			cite = fmt.Sprintf("%s (%s)", cite, o.Items[c.Items[0]].SKU)
+		}
+		matches = append(matches, match{rate: rate, cite: cite})
+	}
+
+	switch len(matches) {
+	case 1:
+		net, gst := gstsplit.SplitInclusive(ev.Amount, matches[0].rate)
+		return RecordedResponse{
+			EventID:   ev.ID,
+			EntryType: "refund_reversal",
+			Params: map[string]int64{
+				"net":       net.Paise(),
+				"gst":       gst.Paise(),
+				"refund_id": 0,
+			},
+			Rationale: fmt.Sprintf("partial refund %s of %s equals line item %s — booked the line-item return as a refund_reversal at %d%%",
+				ev.ID, ev.Amount, matches[0].cite, matches[0].rate),
+			ToolsUsed: []string{orderFetchTool},
+		}
+	case 0:
+		return escalation(ev.ID, fmt.Sprintf(
+			"partial refund %s of %s matches no line item or pair of order %s — unexplained partial credit needs a human", ev.ID, ev.Amount, orderID))
+	default:
+		return escalation(ev.ID, fmt.Sprintf(
+			"partial refund %s matches %d candidate item sets of order %s — ambiguous, needs a human", ev.ID, len(matches), orderID))
 	}
 }
 
@@ -141,7 +228,7 @@ func SummarizeEvent(ev ingest.NormalizedEvent) EventSummary {
 }
 
 // parseRatePercent parses a GST rate string ("18", "12", "5") into an int in
-// integer space only — no float paths — mirroring classify.parseRatePercent and
+// integer space only — no float paths — mirroring posting.parseRatePercent and
 // the seeder's gstRatePercentOf so the recovered rate matches the rule engine's.
 // ok is false for an empty string or any non-digit byte.
 func parseRatePercent(s string) (int, bool) {

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/razorpay/close-agent/internal/money"
+	"github.com/razorpay/ledger-flow/internal/money"
 )
 
 // sampleGL is a small, balanced two-entry ground-truth GL used across the IO

@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+
+	"github.com/razorpay/ledger-flow/internal/money"
 )
 
 // rawObject holds the original Razorpay object attached to a normalized event
@@ -41,10 +43,22 @@ func Normalize(raw Raw) ([]NormalizedEvent, error) {
 		}
 		events = append(events, e)
 	}
+	// Parent-payment gross by id, for the partial-refund enrichment below.
+	payAmount := make(map[string]money.Money, len(raw.Payments))
+	for _, p := range raw.Payments {
+		payAmount[p.ID] = p.Amount
+	}
 	for _, r := range raw.Refunds {
 		e, err := normalizeRefund(r)
 		if err != nil {
 			return nil, err
+		}
+		// A PARTIAL refund (amount < parent gross) carries the parent's gross so
+		// the rule engine can detect partiality per-event (SPEC §4.3 journal). A
+		// full refund stays nil — golden journals unchanged.
+		if parent, ok := payAmount[r.PaymentID]; ok && r.Amount.Paise() < parent.Paise() {
+			pa := parent
+			e.ParentAmount = &pa
 		}
 		events = append(events, e)
 	}
@@ -57,6 +71,28 @@ func Normalize(raw Raw) ([]NormalizedEvent, error) {
 	}
 	for _, d := range raw.Disputes {
 		e, err := normalizeDispute(d)
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, e)
+	}
+
+	// COD rail (ROADMAP §8.3): delivered shipments become cod_delivery events and
+	// each remittance a cod_remittance event. RTO shipments are lifecycle only —
+	// they collected no cash and book no entry here — so normalize skips them; the
+	// harness reads them from raw to confirm an RTO fee is legitimate.
+	for _, s := range raw.CourierFeed.Shipments {
+		if s.Status != "delivered" {
+			continue
+		}
+		e, err := normalizeCODDelivery(s)
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, e)
+	}
+	for _, rm := range raw.CourierFeed.Remittances {
+		e, err := normalizeCODRemittance(rm)
 		if err != nil {
 			return nil, err
 		}
@@ -166,15 +202,61 @@ func normalizeDispute(d RawDispute) (NormalizedEvent, error) {
 	}, nil
 }
 
+// normalizeCODDelivery maps a delivered COD shipment to its cod_delivery event
+// (ROADMAP §8.3). Amount is the gross collected at the door (GST-inclusive);
+// like a payment it carries the order link and the sku + gst_rate notes so the
+// rule engine can split tax out of it. It bears no Razorpay fee/tax (the
+// courier's fee is netted at remittance, not per shipment), so Fee/Tax are nil.
+func normalizeCODDelivery(s RawShipment) (NormalizedEvent, error) {
+	rawMsg, err := marshalRaw(s)
+	if err != nil {
+		return NormalizedEvent{}, fmt.Errorf("ingest: normalize cod delivery %s: %w", s.ID, err)
+	}
+	return NormalizedEvent{
+		ID:     s.ID,
+		Type:   EventCODDelivery,
+		TS:     s.ResolvedAt,
+		Amount: s.CODAmount,
+		Links:  Links{OrderID: s.OrderID},
+		Notes:  notesFrom(s.Notes),
+		Raw:    rawMsg,
+	}, nil
+}
+
+// normalizeCODRemittance maps a courier remittance to its cod_remittance event
+// (ROADMAP §8.3) — the COD-rail analogue of a settlement. Amount is the NET
+// deposited to the bank; Fee is the courier's collection fee and Tax the GST on
+// it, so classify can gross those up to the receivable it clears. The remittance
+// has no order/payment link or notes; its per-shipment deduction lines stay in
+// raw for the harness/investigate stage to decompose.
+func normalizeCODRemittance(rm RawRemittance) (NormalizedEvent, error) {
+	rawMsg, err := marshalRaw(rm)
+	if err != nil {
+		return NormalizedEvent{}, fmt.Errorf("ingest: normalize cod remittance %s: %w", rm.ID, err)
+	}
+	fee := rm.CollectionFee
+	tax := rm.GSTOnFee
+	return NormalizedEvent{
+		ID:     rm.ID,
+		Type:   EventCODRemittance,
+		TS:     rm.CreatedAt,
+		Amount: rm.NetDeposit,
+		Fee:    &fee,
+		Tax:    &tax,
+		Links:  Links{},
+		Raw:    rawMsg,
+	}, nil
+}
+
 // notesFrom lifts a RawNotes into the event's *Notes, returning nil when both
 // fields are empty so the event omits an empty notes object. The seeder always
 // stamps sku + gst_rate on payments/refunds/disputes, so in practice this
 // returns a populated Notes for those events.
 func notesFrom(n RawNotes) *Notes {
-	if n.SKU == "" && n.GSTRate == "" {
+	if n.SKU == "" && n.GSTRate == "" && n.Reason == "" {
 		return nil
 	}
-	return &Notes{SKU: n.SKU, GSTRate: n.GSTRate}
+	return &Notes{SKU: n.SKU, GSTRate: n.GSTRate, Reason: n.Reason}
 }
 
 // marshalRaw re-marshals a typed raw object to canonical JSON for the event's

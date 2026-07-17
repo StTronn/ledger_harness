@@ -3,7 +3,7 @@ package ledger
 import (
 	"sort"
 
-	"github.com/razorpay/close-agent/internal/money"
+	"github.com/razorpay/ledger-flow/internal/money"
 )
 
 // The four report queries (SPEC §6, §10) are PURE functions of the posted

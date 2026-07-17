@@ -1,8 +1,8 @@
 package seed
 
 import (
-	"github.com/razorpay/close-agent/internal/gstsplit"
-	"github.com/razorpay/close-agent/internal/money"
+	"github.com/razorpay/ledger-flow/internal/gstsplit"
+	"github.com/razorpay/ledger-flow/internal/money"
 )
 
 // This file holds the seeder's money arithmetic: splitting a GST-inclusive gross

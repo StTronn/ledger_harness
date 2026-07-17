@@ -3,7 +3,7 @@ package seed
 import (
 	"testing"
 
-	"github.com/razorpay/close-agent/internal/truth"
+	"github.com/razorpay/ledger-flow/internal/truth"
 )
 
 // hardWorld/hardPeriod are the committed missing-metadata hard period (SPEC §11

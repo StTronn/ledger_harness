@@ -3,8 +3,8 @@ package reconcile
 import (
 	"fmt"
 
-	"github.com/razorpay/close-agent/internal/ingest"
-	"github.com/razorpay/close-agent/internal/money"
+	"github.com/razorpay/ledger-flow/internal/ingest"
+	"github.com/razorpay/ledger-flow/internal/money"
 )
 
 // checkSettlementBank is SPEC §7 check #1 (Settlement → Bank): every settlement's

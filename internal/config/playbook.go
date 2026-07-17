@@ -1,7 +1,7 @@
 // Package config loads the playbook — the chart of accounts plus the
 // entry-type templates — from a human-readable JSON file (config/playbook.json).
 //
-// The playbook is the single source of schema truth in close-agent: the rule
+// The playbook is the single source of schema truth in ledger-flow: the rule
 // engine reads it to classify events, the ledger reads it to expand and validate
 // entries, and (later) the agent Skill is generated from it so the agent and the
 // engine cannot drift (SPEC §6, §8). Because the future learning layer edits the

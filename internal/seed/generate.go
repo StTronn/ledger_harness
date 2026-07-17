@@ -3,9 +3,9 @@ package seed
 import (
 	"fmt"
 
-	"github.com/razorpay/close-agent/internal/config"
-	"github.com/razorpay/close-agent/internal/money"
-	"github.com/razorpay/close-agent/internal/truth"
+	"github.com/razorpay/ledger-flow/internal/config"
+	"github.com/razorpay/ledger-flow/internal/money"
+	"github.com/razorpay/ledger-flow/internal/truth"
 )
 
 // Generate is the seeder's single source of activity: from one seeded RNG it
@@ -59,13 +59,29 @@ func Generate(world, period string) (Fixtures, BankFeed, truth.GL, error) {
 // settlement batch). orders.json likewise records each payment's true rate. The
 // returned InjectResult / AmbiguityResult record what (if anything) was perturbed.
 func GenerateWith(world, period string, opts Options) (Fixtures, BankFeed, truth.GL, InjectResult, AmbiguityResult, error) {
+	fx, feed, gl, res, err := GenerateFull(world, period, opts)
+	return fx, feed, gl, res.Inject, res.Ambiguity, err
+}
+
+// Results bundles what the optional generation knobs produced. Adding a knob
+// adds a field here instead of growing GenerateWith's return list (which has
+// two dozen call sites pinned to the 6-value shape).
+type Results struct {
+	Inject    InjectResult
+	Ambiguity AmbiguityResult
+	Partial   PartialResult
+}
+
+// GenerateFull is GenerateWith returning the full Results (including the
+// partial-refunds designations). New callers should prefer it.
+func GenerateFull(world, period string, opts Options) (Fixtures, BankFeed, truth.GL, Results, error) {
 	if err := validateInject(opts.Inject); err != nil {
-		return Fixtures{}, BankFeed{}, truth.GL{}, InjectResult{}, AmbiguityResult{}, err
+		return Fixtures{}, BankFeed{}, truth.GL{}, Results{}, err
 	}
 
 	cal, err := newPeriodCalendar(period)
 	if err != nil {
-		return Fixtures{}, BankFeed{}, truth.GL{}, InjectResult{}, AmbiguityResult{}, err
+		return Fixtures{}, BankFeed{}, truth.GL{}, Results{}, err
 	}
 
 	// The truth GL is built by binding the SAME playbook entry types the rest of
@@ -74,13 +90,14 @@ func GenerateWith(world, period string, opts Options) (Fixtures, BankFeed, truth
 	// pure with respect to (world, period).
 	pb, err := config.DefaultPlaybook()
 	if err != nil {
-		return Fixtures{}, BankFeed{}, truth.GL{}, InjectResult{}, AmbiguityResult{}, fmt.Errorf("seed: load playbook for truth GL: %w", err)
+		return Fixtures{}, BankFeed{}, truth.GL{}, Results{}, fmt.Errorf("seed: load playbook for truth GL: %w", err)
 	}
 
 	g := &generator{
 		rng:    NewRNG(world, period),
 		cal:    cal,
 		world:  world,
+		period: period,
 		binder: newTruthBinder(pb),
 		// Initialise output slices as non-nil so they marshal as JSON arrays
 		// ([]) even when empty, keeping the on-disk fixture schema stable.
@@ -91,11 +108,14 @@ func GenerateWith(world, period string, opts Options) (Fixtures, BankFeed, truth
 		orders:      make([]Order, 0),
 		bankCredits: make([]BankFeedEntry, 0),
 		bankDebits:  make([]BankFeedEntry, 0),
+		partial:     opts.PartialRefunds,
+		partialOut:  make([]PartialRefund, 0),
+		cod:         opts.COD,
 	}
 	g.ids = newIDGen(g.rng)
 
 	if err := g.run(); err != nil {
-		return Fixtures{}, BankFeed{}, truth.GL{}, InjectResult{}, AmbiguityResult{}, err
+		return Fixtures{}, BankFeed{}, truth.GL{}, Results{}, err
 	}
 
 	gl := truth.GL{
@@ -116,6 +136,7 @@ func GenerateWith(world, period string, opts Options) (Fixtures, BankFeed, truth
 		Settlements: g.settlements,
 		Disputes:    g.disputes,
 		Orders:      g.orders,
+		Courier:     g.courier,
 	}
 
 	// Defensive by-construction check: the truth GL MUST balance. This is a
@@ -125,7 +146,7 @@ func GenerateWith(world, period string, opts Options) (Fixtures, BankFeed, truth
 	// balanced regardless (tests assert it).
 	if !gl.IsBalanced() {
 		dr, cr := gl.SumBySide()
-		return Fixtures{}, BankFeed{}, truth.GL{}, InjectResult{}, AmbiguityResult{},
+		return Fixtures{}, BankFeed{}, truth.GL{}, Results{},
 			fmt.Errorf("seed: internal error — generated truth GL does not balance (ΣDr=%s ΣCr=%s)", dr, cr)
 	}
 
@@ -134,7 +155,7 @@ func GenerateWith(world, period string, opts Options) (Fixtures, BankFeed, truth
 	// the break lives in the inconsistency between them and the perturbed fixture.
 	inj, err := applyInject(opts.Inject, &fx)
 	if err != nil {
-		return Fixtures{}, BankFeed{}, truth.GL{}, InjectResult{}, AmbiguityResult{}, err
+		return Fixtures{}, BankFeed{}, truth.GL{}, Results{}, err
 	}
 
 	// Seed the missing-metadata long tail by stripping gst_rate from a
@@ -143,7 +164,7 @@ func GenerateWith(world, period string, opts Options) (Fixtures, BankFeed, truth
 	// stripped payments' true rates survive in their orders for the agent to fetch.
 	amb := applyAmbiguity(opts.Ambiguity, world, period, &fx)
 
-	return fx, feed, gl, inj, amb, nil
+	return fx, feed, gl, Results{Inject: inj, Ambiguity: amb, Partial: PartialResult{Refunds: g.partialOut}}, nil
 }
 
 // generator carries the RNG, calendar, id minter, and the growing output slices
@@ -151,10 +172,11 @@ func GenerateWith(world, period string, opts Options) (Fixtures, BankFeed, truth
 // append to shared slices in a fixed order, which keeps the stream and output
 // deterministic.
 type generator struct {
-	rng   *RNG
-	cal   periodCalendar
-	ids   *idGen
-	world string
+	rng    *RNG
+	cal    periodCalendar
+	ids    *idGen
+	world  string
+	period string
 
 	// Razorpay-shaped fixtures (agent input).
 	payments    []Payment
@@ -170,6 +192,16 @@ type generator struct {
 	// binder builds the ground-truth GL (scorer only) by binding playbook entry
 	// types and posting them through the real ledger, in posting order.
 	binder *truthBinder
+
+	// Partial-refunds world (partial.go). partial gates the generation knob;
+	// partialOut records the designated refunds in designation order.
+	partial    bool
+	partialOut []PartialRefund
+
+	// COD rail (cod.go). cod gates the generation knob; courier holds the emitted
+	// courier feed (nil when the knob is off).
+	cod     bool
+	courier *CourierFeed
 }
 
 // Generation-rule constants. These fix the SHAPE of a synthetic month; changing
@@ -209,6 +241,21 @@ func (g *generator) run() error {
 	for i := 0; i < numBatches; i++ {
 		settleDayOffset := g.batchSettleDayOffset(i)
 		if err := g.generateBatch(settleDayOffset); err != nil {
+			return err
+		}
+	}
+	// The partial-refunds world needs all three judgment slots filled; fewer
+	// refunds than designations is a generation-shape regression to fail loudly
+	// on (mirrors the inject.go "cannot inject" errors).
+	if g.partial && len(g.partialOut) < len(partialClasses) {
+		return fmt.Errorf("seed: partial-refunds world produced only %d of %d designated refunds",
+			len(g.partialOut), len(partialClasses))
+	}
+	// The COD rail (cod.go) is appended after the Razorpay batches so a COD period
+	// has both rails; periods without the knob never draw from the RNG here, so
+	// they stay byte-identical.
+	if g.cod {
+		if err := g.generateCOD(); err != nil {
 			return err
 		}
 	}
@@ -284,11 +331,25 @@ func (g *generator) generateBatch(settleDayOffset int) error {
 		// netted out of this batch's deposit.
 		if g.rng.Chance(refundChanceNum, refundChanceDen) {
 			rf := g.makeRefund(pay, settleTs)
+			// In the partial-refunds world the first three refunds become the
+			// R1/R2/R3 judgment spectrum (partial.go): the amount is mutated BEFORE
+			// any downstream use, so batch netting, the deposit, the bank feed, and
+			// truth all flow from the same partial value by construction.
+			entryType := "refund_reversal"
+			if g.partial && len(g.partialOut) < len(partialClasses) {
+				class, err := g.designatePartial(&rf, pay)
+				if err != nil {
+					return err
+				}
+				if class != PartialItemMatch {
+					entryType = "price_adjustment"
+				}
+			}
 			g.refunds = append(g.refunds, rf)
 			refundIDs = append(refundIDs, rf.ID)
 			refundGross = refundGross.Add(rf.Amount)
 			rnet, rgst := splitGSTInclusive(rf.Amount, gstRatePercentOf(pay))
-			if err := g.addRefundEntry(rf, rnet, rgst); err != nil {
+			if err := g.addRefundEntryAs(entryType, rf, rnet, rgst); err != nil {
 				return err
 			}
 		}

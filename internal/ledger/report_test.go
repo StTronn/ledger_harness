@@ -3,7 +3,7 @@ package ledger
 import (
 	"testing"
 
-	"github.com/razorpay/close-agent/internal/money"
+	"github.com/razorpay/ledger-flow/internal/money"
 )
 
 // buildScenario posts a deterministic hand-written set of entries that exercise

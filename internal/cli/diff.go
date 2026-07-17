@@ -5,12 +5,12 @@ import (
 	"io"
 	"os"
 
-	"github.com/razorpay/close-agent/internal/closer"
-	"github.com/razorpay/close-agent/internal/score"
+	"github.com/razorpay/ledger-flow/internal/ledgerflow/run"
+	"github.com/razorpay/ledger-flow/internal/score"
 	"github.com/spf13/cobra"
 )
 
-// newDiffCmd: `close-agent diff --world <string> --period <YYYY-MM>` (SPEC §10).
+// newDiffCmd: `ledger-flow diff --world <string> --period <YYYY-MM>` (SPEC §10).
 //
 // It runs the deterministic close and prints the diff of the produced ledger
 // against the hidden truth GL, line by line: every wrong/missing/extra entry
@@ -32,7 +32,7 @@ func newDiffCmd(out io.Writer) *cobra.Command {
 				}
 				root = wd
 			}
-			res, err := closer.Run(root, world, period)
+			res, err := run.Run(root, world, period)
 			if err != nil {
 				return err
 			}

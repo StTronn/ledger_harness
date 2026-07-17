@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/razorpay/close-agent/internal/truth"
+	"github.com/razorpay/ledger-flow/internal/truth"
 )
 
 // TestSeedWritesArtifactTree asserts Seed writes the full SPEC §4.4 artifact tree

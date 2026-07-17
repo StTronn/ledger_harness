@@ -1,4 +1,4 @@
-# close-agent — v1 Spec & Execution Handover
+# ledger-flow — v1 Spec & Execution Handover
 
 > **Status:** design locked, ready to build.
 > **Audience:** the execution agent(s) building this. Read this top-to-bottom before writing code.
@@ -18,7 +18,7 @@
 
 A DTC brand running payments through Razorpay has to turn raw payment activity into books each month. For hundreds of events that means: pick the right journal entry, **gross up fees** (Razorpay nets fees out of settlements, so the cash that hits the bank hides the real gross + fee), **split GST** out of revenue, **reconcile every payout to the bank**, and chase anything that doesn't tie out. It's tedious, needs accounting judgment, and one wrong assumption throws the trial balance out of balance.
 
-**close-agent v1:** point it at one month of Razorpay activity → get correct, balanced, double-entry books (trial balance, balance sheet, income statement, journal), fully reconciled to the bank, with anything that doesn't reconcile **investigated**, not just flagged.
+**ledger-flow v1:** point it at one month of Razorpay activity → get correct, balanced, double-entry books (trial balance, balance sheet, income statement, journal), fully reconciled to the bank, with anything that doesn't reconcile **investigated**, not just flagged.
 
 **Where the agent earns its keep** (everything else is deterministic):
 1. **Ambiguous/novel classification** — an event no rule covers (e.g. missing tax metadata) → agent reasons from context (fetch the order) and picks the entry type.
@@ -33,7 +33,7 @@ A DTC brand running payments through Razorpay has to turn raw payment activity i
 - **One period at a time** (a month).
 - Full **double-entry** ledger, fixed chart of accounts (~15 nodes).
 - Entry-type templates (the "playbook"), **hand-written and static**.
-- Deterministic rule-engine classify + **agent fallback** for the long tail.
+- Deterministic the bookkeeper + **agent fallback** for the long tail.
 - 3-check reconciliation against a seeder-generated **bank feed**.
 - Reports: trial balance, balance sheet, income statement, journal export.
 - Scoring vs a hidden ground-truth ledger; per-error records emitted.
@@ -58,7 +58,7 @@ A DTC brand running payments through Razorpay has to turn raw payment activity i
 ┌─ GO SERVICE (deterministic spine + orchestrator) ────────────────┐
 │  reuses razorpay-cli/api directly (no subprocess)                │
 │                                                                  │
-│  ingest → normalize → classify(rule engine) → post → reconcile   │
+│  ingest → normalize → classify(bookkeeper) → post → reconcile   │
 │           → reports → score        ▲              │              │
 │                                    │ rule MISS    │ break        │
 │                                    ▼              ▼              │
@@ -82,7 +82,7 @@ A DTC brand running payments through Razorpay has to turn raw payment activity i
 | Layer | Tech | Responsibility |
 |---|---|---|
 | ingest, normalize | **Go** | import `razorpay-cli/api`; pull period data; flatten to event journal |
-| rule-engine classify | **Go** | book the ~95% deterministically via entry templates |
+| the bookkeeper | **Go** | book the ~95% deterministically via entry templates |
 | ledger core | **Go** | post (balance-or-error), linked-account reconcile, report queries |
 | orchestrator | **Go** | drive the DAG; call Flue only on rule-miss / reconcile-break |
 | score | **Go** | diff vs truth GL → %, per-error records |
@@ -120,7 +120,7 @@ expense/
 ```
 Keep it ~10–15 nodes in v1. Do not expand without a reason.
 
-### 4.2 Entry types (the playbook — hand-written, static in v1)
+### 4.2 Entry types (the chart of accounts (COA) — hand-written, static in v1)
 Declarative, parameterized, **balanced-by-construction** templates. Arithmetic in templates is `+`/`-` only — **derived amounts (e.g. GST split via division) are computed at bind time**, not in the template. Minimum v1 set:
 
 - `dtc_sale` — params `{gross, net, gst, payment_id}`
@@ -204,7 +204,7 @@ The ledger is a standalone Go package + a thin HTTP service. It knows **nothing*
 - `GET /ledger/reports/journal?period=…`
 - `GET /ledger/accounts/:path/balance?at=…` (used by reconcile check #3)
 
-Schema (chart of accounts + entry types) is loaded from a config file at startup — this file **is the playbook**. Keep it human-readable (JSON/YAML).
+Schema (chart of accounts + entry types) is loaded from a config file at startup — this file **is the chart of accounts (COA)**. Keep it human-readable (JSON/YAML).
 
 **Money-safety invariants (enforce in code, test hard):**
 - integer minor units only;
@@ -243,7 +243,7 @@ POST /agents/investigate
 
 - The agent's **only** way to affect the ledger is returning `{entry_type, params}` that the Go ledger then validates. It cannot emit raw debits/credits.
 - Tools available to the agent are **read-only Razorpay lookups** (orders/refunds/disputes fetch), implemented as calls to Go's read API so all data stays snapshotted.
-- The **playbook is provided to the agent as a Skill** (SKILL.md) describing the entry types and when each applies — same source of truth the rule engine uses; generate the skill text from the schema file so they can't drift.
+- The **playbook is provided to the agent as a Skill** (SKILL.md) describing the entry types and when each applies — same source of truth the bookkeeper uses; generate the skill text from the schema file so they can't drift.
 - Every agent call emits a **trace** (input, tools used, decision, rationale). Freeze the trace schema early (§13) — it's the learning seam.
 
 ---
@@ -259,12 +259,12 @@ POST /agents/investigate
 ## 10. CLI surface (terminal-first)
 
 ```
-close-agent seed   --world dtc --period 2026-05      # generate substrate + bank-feed + truth
-close-agent close  --world dtc --period 2026-05      # run the workflow, print score
-close-agent report --world dtc --period 2026-05 --kind trial-balance|balance-sheet|income|journal
-close-agent show   playbook                          # print the entry types (schema file)
-close-agent show   trace runs/<...>                  # print an agent trajectory
-close-agent diff   --world dtc --period 2026-05       # agent ledger vs truth, line by line
+ledger-flow seed   --world dtc --period 2026-05      # generate substrate + bank-feed + truth
+ledger-flow run    --world dtc --period 2026-05      # run the workflow, print score
+ledger-flow report --world dtc --period 2026-05 --kind trial-balance|balance-sheet|income|journal
+ledger-flow show   playbook                          # print the entry types (schema file)
+ledger-flow show   trace runs/<...>                  # print an agent trajectory
+ledger-flow diff   --world dtc --period 2026-05       # agent ledger vs truth, line by line
 ```
 
 ---
@@ -276,8 +276,8 @@ close-agent diff   --world dtc --period 2026-05       # agent ledger vs truth, l
 > Each phase is an independently reviewable unit of work. Phases 1–6 contain **no LLM** — the system fully runs and scores deterministically by the end of Phase 6. Phases 7–8 add the agent and can only *raise* the score.
 
 ### Phase 0 — scaffolding
-- Go module (`close-agent`), folder layout, config loading, CLI skeleton (commands stubbed).
-- **Gate:** `close-agent --help` lists commands; CI builds.
+- Go module (`ledger-flow`), folder layout, config loading, CLI skeleton (commands stubbed).
+- **Gate:** `ledger-flow --help` lists commands; CI builds.
 
 ### Phase 1 — Ledger core (Go), no Razorpay, no agent ⭐ foundation
 - Chart of accounts loader, entry-type template engine, `post()` with balance validation, idempotency, the four report queries.
@@ -291,7 +291,7 @@ close-agent diff   --world dtc --period 2026-05       # agent ledger vs truth, l
 - Read fixtures (later: live api), flatten to the event journal.
 - **Gate:** golden test — fixtures → expected normalized event journal.
 
-### Phase 4 — rule-engine classify + post wiring (Go, NO agent)
+### Phase 4 — the bookkeeper + post wiring (Go, NO agent)
 - Hand-written rules mapping events → entry types + computing derived params (GST split, gross-up). Unmatched events are **flagged and skipped** (not sent anywhere yet).
 - **Gate:** `close` runs end to end on a fixture period and scores vs truth. Expect a **partial score** (whatever the rules cover, e.g. ~80%). Record this as the deterministic baseline. Skipped/unmatched events are reported, not crashed.
 
@@ -344,7 +344,7 @@ The architecture is built so growth is **additive** (new data + new entry types)
 - **Inventory / COGS (v2):** the only growth needing a **new data model** — a product catalog (unit costs) + inventory movements. Adds `assets/inventory`, `expense/cogs`, entry types (`inventory_purchase`, `record_cogs`), and an inventory sub-ledger + cost-flow method (weighted-avg/FIFO). The agent handles cost-flow judgment and negative-inventory investigation.
 - **Learning layer / meta-agent (the big deferred piece):** consumes `errors.json` (clustered) and **authors new entry types** (schema mutations), each auto-validated by the ledger's balance check before being kept; held-out periods guard against overfitting.
   - *Caveat:* **freeze the `errors.json` and trace schemas early** (Phases 6–7). They are the entire contract the learning layer hangs off. Changing them later breaks the learner.
-  - *Caveat:* the learner edits the **schema file (playbook)**, not code. Keep the playbook fully data-driven so it's machine-editable.
+  - *Caveat:* the learner edits the **schema file (playbook)**, not code. Keep the chart of accounts (COA) fully data-driven so it's machine-editable.
   - DSPy/GEPA (prompt optimization) is a *different axis* (keeps the LLM per-item, tunes its prompt). If wanted, run it as a **Python sidecar** over traces — do not entangle it with the Go spine.
 - **Flue autonomy / subagents / skills-evolution:** unused in v1; the natural home for the learning phase (subagents = sub-workflows + meta-agent; evolving SKILL.md = the growing playbook; trace export = the learning fuel). Because the agent already lives in Flue behind a thin interface, this is an expansion, not a port.
 - **More worlds (SaaS, Marketplace):** each is a new seeder + schema; the same engine closes them. This is the "generalize across worlds" demo — enabled, not built, in v1.
@@ -362,7 +362,7 @@ The architecture is built so growth is **additive** (new data + new entry types)
 ---
 
 ## 14. Open decisions / notes for the executor
-- **Project name:** `close-agent` (default; rename if desired before scaffolding).
+- **Project name:** `ledger-flow` (default; rename if desired before scaffolding).
 - **Sign convention** in the ledger: pick one, document in code, enforce in `post()`. (§4.2)
 - **Go↔Flue transport:** plain HTTP/JSON is fine for v1; keep the interface (§8) stable regardless.
 - **Flue version risk:** Flue is early-stage. Keep the agent behind the §8 interface so it can be swapped for a hand-rolled Anthropic-SDK agent if Flue blocks you. Do **not** let Flue specifics leak into the Go orchestrator.

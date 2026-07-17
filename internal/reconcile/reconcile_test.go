@@ -3,8 +3,8 @@ package reconcile
 import (
 	"testing"
 
-	"github.com/razorpay/close-agent/internal/ingest"
-	"github.com/razorpay/close-agent/internal/money"
+	"github.com/razorpay/ledger-flow/internal/ingest"
+	"github.com/razorpay/ledger-flow/internal/money"
 )
 
 // p builds a money value from paise for terse test fixtures.

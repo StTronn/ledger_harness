@@ -1,6 +1,10 @@
 package agentclient
 
-import "github.com/razorpay/close-agent/internal/money"
+import (
+	"encoding/json"
+
+	"github.com/razorpay/ledger-flow/internal/money"
+)
 
 // ReplayClient is the DEFAULT, CI-safe Client (SPEC §11 Phase 7, §12): it answers
 // a Classify call from the committed recorded-response fixture
@@ -48,7 +52,7 @@ func (c *ReplayClient) Mode() Mode { return ModeReplay }
 // It returns an error only if a recorded response is internally malformed (a
 // classification with no params); a normal missing-record is an unclassifiable
 // result, not an error.
-func (c *ReplayClient) Classify(ev EventSummary) (ClassifyResult, Trace, error) {
+func (c *ReplayClient) Classify(ev EventSummary, _ ...json.RawMessage) (ClassifyResult, Trace, error) {
 	rec, ok := c.index[ev.EventID]
 	if !ok {
 		res := Unclassified("no recorded response for event " + ev.EventID)

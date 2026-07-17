@@ -20,6 +20,7 @@ type paths struct {
 	settlements string
 	disputes    string
 	bankFeed    string
+	courierFeed string
 }
 
 // resolvePaths builds the fixture paths for (root, world, period). It does no IO
@@ -34,6 +35,7 @@ func resolvePaths(root, world, period string) paths {
 		settlements: filepath.Join(razorpay, "settlements.json"),
 		disputes:    filepath.Join(razorpay, "disputes.json"),
 		bankFeed:    filepath.Join(period_dir, "bank-feed.json"),
+		courierFeed: filepath.Join(period_dir, "courier-feed.json"),
 	}
 }
 
@@ -66,8 +68,29 @@ func Read(root, world, period string) (Raw, error) {
 	if err := readJSONObject(p.bankFeed, &raw.BankFeed); err != nil {
 		return Raw{}, err
 	}
+	// The courier feed is OPTIONAL: a Razorpay-only period has no
+	// courier-feed.json, in which case CourierFeed stays zero and normalize
+	// produces no COD events. Only a genuine read error (a present-but-corrupt
+	// file) is fatal.
+	if err := readJSONObjectOptional(p.courierFeed, &raw.CourierFeed); err != nil {
+		return Raw{}, err
+	}
 
 	return raw, nil
+}
+
+// readJSONObjectOptional decodes the JSON object at path into out, treating a
+// MISSING file as success (out is left at its zero value). It exists for the COD
+// courier feed, which only some periods carry; a present-but-malformed file is
+// still a hard decode error, so corruption is never silently ignored.
+func readJSONObjectOptional(path string, out any) error {
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("ingest: stat %s: %w", path, err)
+	}
+	return readJSONObject(path, out)
 }
 
 // readJSONArray decodes the JSON array file at path into *out (a pointer to a

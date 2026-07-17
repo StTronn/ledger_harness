@@ -85,7 +85,7 @@ func TestShowTraceResolvesDirToTraceFile(t *testing.T) {
 	}
 }
 
-// TestHelpListsSubcommands asserts `close-agent --help` lists every top-level
+// TestHelpListsSubcommands asserts `ledger-flow --help` lists every top-level
 // subcommand named in the gate.
 func TestHelpListsSubcommands(t *testing.T) {
 	var buf bytes.Buffer
@@ -93,7 +93,7 @@ func TestHelpListsSubcommands(t *testing.T) {
 		t.Fatalf("Execute(--help) returned error: %v", err)
 	}
 	out := buf.String()
-	for _, sub := range []string{"seed", "close", "report", "show", "diff"} {
+	for _, sub := range []string{"seed", "run", "report", "show", "diff"} {
 		if !strings.Contains(out, sub) {
 			t.Errorf("--help output missing subcommand %q\n---\n%s", sub, out)
 		}
@@ -145,7 +145,7 @@ func TestShowTraceRequiresPath(t *testing.T) {
 	}
 }
 
-// TestSeedCommandWritesSubstrate drives `close-agent seed` against a temp root
+// TestSeedCommandWritesSubstrate drives `ledger-flow seed` against a temp root
 // (via the hidden --root flag) and asserts it writes the full SPEC §4.4 artifact
 // tree under worlds/<world>/<period>/ and prints a summary. It uses a temp dir so
 // the test never pollutes the repo's worlds/.
@@ -199,8 +199,8 @@ func TestCloseScoresSeededPeriod(t *testing.T) {
 	}
 
 	var buf bytes.Buffer
-	if err := Execute([]string{"close", "--world", "dtc", "--period", "2026-05", "--root", root}, &buf); err != nil {
-		t.Fatalf("close returned error: %v", err)
+	if err := Execute([]string{"run", "--world", "dtc", "--period", "2026-05", "--root", root}, &buf); err != nil {
+		t.Fatalf("run returned error: %v", err)
 	}
 	out := buf.String()
 	for _, want := range []string{
@@ -210,11 +210,11 @@ func TestCloseScoresSeededPeriod(t *testing.T) {
 		"score = 100%",
 	} {
 		if !strings.Contains(out, want) {
-			t.Errorf("close output missing %q\n---\n%s", want, out)
+			t.Errorf("run output missing %q\n---\n%s", want, out)
 		}
 	}
 	if strings.Contains(out, "scoring errors") {
-		t.Errorf("close reported scoring errors on a clean period\n---\n%s", out)
+		t.Errorf("run reported scoring errors on a clean period\n---\n%s", out)
 	}
 }
 
@@ -224,12 +224,12 @@ func TestCloseScoresSeededPeriod(t *testing.T) {
 func TestCloseAgainstCommittedFixtures(t *testing.T) {
 	repoRoot := filepath.Join("..", "..")
 	var buf bytes.Buffer
-	if err := Execute([]string{"close", "--world", "dtc", "--period", "2026-05", "--root", repoRoot}, &buf); err != nil {
-		t.Fatalf("close returned error: %v", err)
+	if err := Execute([]string{"run", "--world", "dtc", "--period", "2026-05", "--root", repoRoot}, &buf); err != nil {
+		t.Fatalf("run returned error: %v", err)
 	}
 	out := buf.String()
 	if !strings.Contains(out, "score = 100%") {
-		t.Errorf("close against committed fixtures did not score 100%%\n---\n%s", out)
+		t.Errorf("run against committed fixtures did not score 100%%\n---\n%s", out)
 	}
 }
 
@@ -237,7 +237,7 @@ func TestCloseAgainstCommittedFixtures(t *testing.T) {
 // and the binary name) against accidental renames.
 func TestRootIsNamedCloseAgent(t *testing.T) {
 	root := NewRootCmd(&bytes.Buffer{})
-	if root.Use != "close-agent" {
-		t.Errorf("root.Use = %q, want %q", root.Use, "close-agent")
+	if root.Use != "ledger-flow" {
+		t.Errorf("root.Use = %q, want %q", root.Use, "ledger-flow")
 	}
 }

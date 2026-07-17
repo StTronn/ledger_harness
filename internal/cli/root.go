@@ -1,4 +1,4 @@
-// Package cli wires the close-agent cobra command tree. It is kept separate
+// Package cli wires the ledger-flow cobra command tree. It is kept separate
 // from package main so the command surface is unit-testable: NewRootCmd builds
 // a fresh tree and Execute drives it, both without touching os.Args or os.Exit.
 //
@@ -20,14 +20,14 @@ import (
 // reference this so the path is defined in one place.
 const defaultPlaybookPath = "config/playbook.json"
 
-// NewRootCmd builds the full command tree rooted at "close-agent" with output
+// NewRootCmd builds the full command tree rooted at "ledger-flow" with output
 // routed to out. Passing the writer in keeps the tree free of global state and
 // lets tests capture output deterministically.
 func NewRootCmd(out io.Writer) *cobra.Command {
 	root := &cobra.Command{
-		Use:   "close-agent",
+		Use:   "ledger-flow",
 		Short: "Close a month of Razorpay activity into balanced, reconciled books",
-		Long: "close-agent ingests one period of a DTC brand's Razorpay activity, " +
+		Long: "ledger-flow ingests one period of a DTC brand's Razorpay activity, " +
 			"produces a balanced double-entry ledger and financial reports, " +
 			"reconciles to the bank feed, and scores the result against ground truth.",
 		// Silence cobra's own error/usage printing; main.go owns exit codes and
@@ -40,10 +40,11 @@ func NewRootCmd(out io.Writer) *cobra.Command {
 
 	root.AddCommand(
 		newSeedCmd(out),
-		newCloseCmd(out),
+		newRunCmd(out),
 		newReportCmd(out),
 		newShowCmd(out),
 		newDiffCmd(out),
+		newContextCmd(out),
 		newRecordResponsesCmd(out),
 		newRecordInvestigationsCmd(out),
 	)
@@ -62,5 +63,5 @@ func Execute(args []string, out io.Writer) error {
 // notImplemented prints a uniform, non-error stub message for a command. It is
 // the single place the Phase 0 "stub" behavior is defined.
 func notImplemented(out io.Writer, command string) {
-	fmt.Fprintf(out, "close-agent %s: not implemented yet (phase 0 scaffolding)\n", command)
+	fmt.Fprintf(out, "ledger-flow %s: not implemented yet (phase 0 scaffolding)\n", command)
 }

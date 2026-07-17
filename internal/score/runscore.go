@@ -3,7 +3,7 @@ package score
 import (
 	"path/filepath"
 
-	"github.com/razorpay/close-agent/internal/truth"
+	"github.com/razorpay/ledger-flow/internal/truth"
 )
 
 // runscore.go is the FILE-reading entry point of the scorer: it is the single

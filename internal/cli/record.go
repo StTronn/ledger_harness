@@ -5,15 +5,15 @@ import (
 	"io"
 	"os"
 
-	"github.com/razorpay/close-agent/internal/agentclient"
-	"github.com/razorpay/close-agent/internal/closer"
+	"github.com/razorpay/ledger-flow/internal/agentclient"
+	"github.com/razorpay/ledger-flow/internal/ledgerflow/run"
 	"github.com/spf13/cobra"
 )
 
 // newRecordResponsesCmd is the HIDDEN, deterministic generator for the committed
 // recorded-response fixture (SPEC §2, §12):
 //
-//	close-agent record-responses --world dtc --period 2026-04
+//	ledger-flow record-responses --world dtc --period 2026-04
 //
 // It rebuilds worlds/<world>/<period>/agent/classify.recorded.json by, for each
 // rule-missed payment, fetching its order from orders.json (the legitimate
@@ -63,13 +63,13 @@ func newRecordResponsesCmd(out io.Writer) *cobra.Command {
 // committed recorded-INVESTIGATION fixture (SPEC §2, §8, §12), parallel to
 // record-responses for classify:
 //
-//	close-agent record-investigations --world dtc --period 2026-03
+//	ledger-flow record-investigations --world dtc --period 2026-03
 //
 // It rebuilds worlds/<world>/<period>/agent/investigate.recorded.json by running
 // the close pipeline up to reconcile (with the committed classify replay) and, for
 // each break, deriving the resolution from the snapshotted agent-input fixtures
 // (orders.json / refunds.json, NOT truth) — the same {entry_type, params} the rule
-// engine would have produced for the unbooked refund (closer.GenerateInvestigateRecorded).
+// engine would have produced for the unbooked refund (run.GenerateInvestigateRecorded).
 // It is deterministic and reproducible; a test asserts it reproduces the committed
 // file byte-for-byte. It NEVER reads truth.
 func newRecordInvestigationsCmd(out io.Writer) *cobra.Command {
@@ -86,7 +86,7 @@ func newRecordInvestigationsCmd(out io.Writer) *cobra.Command {
 				}
 				root = wd
 			}
-			f, err := closer.GenerateInvestigateRecorded(root, world, period)
+			f, err := run.GenerateInvestigateRecorded(root, world, period)
 			if err != nil {
 				return err
 			}

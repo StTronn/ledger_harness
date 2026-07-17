@@ -5,8 +5,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/razorpay/close-agent/internal/closer"
-	"github.com/razorpay/close-agent/internal/ledger"
+	"github.com/razorpay/ledger-flow/internal/ledger"
+	"github.com/razorpay/ledger-flow/internal/ledgerflow/run"
 	"github.com/spf13/cobra"
 )
 
@@ -14,7 +14,7 @@ import (
 // in v1; the rule engine and reports must agree on these names.
 var reportKinds = []string{"trial-balance", "balance-sheet", "income", "journal"}
 
-// newReportCmd: `close-agent report --world <string> --period <YYYY-MM>
+// newReportCmd: `ledger-flow report --world <string> --period <YYYY-MM>
 // --kind <trial-balance|balance-sheet|income|journal>` (SPEC §10).
 //
 // It runs the deterministic close pipeline to build the posted ledger for the
@@ -37,7 +37,7 @@ func newReportCmd(out io.Writer) *cobra.Command {
 				}
 				root = wd
 			}
-			res, err := closer.Run(root, world, period)
+			res, err := run.Run(root, world, period)
 			if err != nil {
 				return err
 			}

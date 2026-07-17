@@ -3,7 +3,7 @@ package agentclient
 import (
 	"testing"
 
-	"github.com/razorpay/close-agent/internal/money"
+	"github.com/razorpay/ledger-flow/internal/money"
 )
 
 // fixtureFile builds a small recorded-response fixture for the replay tests: one

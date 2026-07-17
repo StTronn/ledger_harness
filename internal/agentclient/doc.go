@@ -5,12 +5,11 @@
 //
 //	Classify(EventSummary) -> {entry_type, params, rationale} | {unclassifiable, reason}
 //
-// exactly the §8 `POST /agents/classify` contract. The agent's only way to
-// affect the ledger is to return an {entry_type, params} pair the Go ledger then
-// validates (balance-or-reject); it NEVER emits raw debits/credits. So a
-// ClassifyResult carries an entry-type name and a paise Params map keyed to the
-// playbook — the same seam the rule engine produces — and the orchestrator binds
-// and posts the agent's result identically to a rule's.
+// exactly the §8 `POST /agents/classify` contract. The agent returns an
+// {entry_type, params} recommendation for review; it NEVER emits raw
+// debits/credits and never posts. A ClassifyResult carries an entry-type name and
+// a paise Params map keyed to the playbook, while the deterministic or approved
+// posting path remains responsible for ledger writes.
 //
 // # Modes (SPEC §11 Phase 7 "recorded-response mode"; §12)
 //

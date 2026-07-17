@@ -3,10 +3,10 @@ package seed
 import (
 	"testing"
 
-	"github.com/razorpay/close-agent/internal/config"
-	"github.com/razorpay/close-agent/internal/ledger"
-	"github.com/razorpay/close-agent/internal/money"
-	"github.com/razorpay/close-agent/internal/truth"
+	"github.com/razorpay/ledger-flow/internal/config"
+	"github.com/razorpay/ledger-flow/internal/ledger"
+	"github.com/razorpay/ledger-flow/internal/money"
+	"github.com/razorpay/ledger-flow/internal/truth"
 )
 
 // TestTruthGLBoundFromPlaybook is the module's headline assertion (SPEC §2 Phase

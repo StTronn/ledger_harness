@@ -1,6 +1,6 @@
 package seed
 
-import "github.com/razorpay/close-agent/internal/money"
+import "github.com/razorpay/ledger-flow/internal/money"
 
 // This file declares the Razorpay-shaped fixture types and the independent bank
 // feed — the seeder's AGENT INPUTS (SPEC §4.4). Field names, id prefixes, and
@@ -62,6 +62,10 @@ type Order struct {
 	Receipt   string      `json:"receipt"`    // merchant receipt no. (deterministic)
 	CreatedAt int64       `json:"created_at"` // Unix seconds (order precedes its payment)
 	Notes     Notes       `json:"notes"`      // AUTHORITATIVE sku + gst_rate
+	// Items is the order's line-item breakdown, present ONLY in the
+	// partial-refunds world (omitempty keeps the committed clean worlds
+	// byte-identical). Same rate across items in v1; amounts sum to Amount.
+	Items []OrderItem `json:"items,omitempty"`
 }
 
 // Refund is a Razorpay-shaped refund (id prefix rfnd_) against a captured
@@ -115,13 +119,29 @@ type Dispute struct {
 	Notes     Notes       `json:"notes"`      // sku + gst_rate copied from the payment
 }
 
-// Notes mirrors Razorpay's free-form notes map but is typed to the two keys the
+// Notes mirrors Razorpay's free-form notes map but is typed to the keys the
 // seeder stamps (SPEC §4.3 "notes incl. sku + gst_rate"): the product SKU and
 // the GST rate percentage as a string ("18", "12", "5"). Keeping it a struct
 // (not a map) fixes JSON key order and keeps the schema explicit.
 type Notes struct {
 	SKU     string `json:"sku"`
 	GSTRate string `json:"gst_rate"` // percent as a string, e.g. "18"
+	// Reason is an optional merchant-ops annotation on a refund (e.g. "goodwill"
+	// on a manual partial credit). It is stamped ONLY by the partial-refunds world
+	// (its R2 refund); omitempty keeps every existing fixture byte-identical.
+	Reason string `json:"reason,omitempty"`
+}
+
+// OrderItem is one line item of an order in the partial-refunds world: what was
+// sold, for how much (paise, GST-inclusive), at which rate. Line items are the
+// matching substrate for the refund-intent judgment — a partial refund whose
+// amount equals a line item is (very likely) that item returned. Items appear
+// ONLY when the world is seeded with Options.PartialRefunds (omitempty keeps the
+// committed clean worlds byte-identical).
+type OrderItem struct {
+	SKU     string      `json:"sku"`
+	Amount  money.Money `json:"amount"`   // paise, GST-inclusive
+	GSTRate string      `json:"gst_rate"` // percent as a string; same rate across an order's items in v1
 }
 
 // BankFeed is the independent second record of cash movement (SPEC §4.4): the
@@ -147,6 +167,55 @@ type BankFeedEntry struct {
 	Ref    string      `json:"ref"`    // UTR (credit) or dispute id (debit) to match on
 }
 
+// CourierFeed is the COD rail's agent-input feed (ROADMAP §8.3): the report a
+// logistics aggregator gives the merchant, with every COD shipment's lifecycle
+// and the courier's netted remittance(s). Its JSON shape mirrors ingest's
+// RawCourierFeed exactly (the on-disk contract the two packages share). It is
+// emitted only for COD worlds; a Razorpay-only period has no courier-feed.json.
+type CourierFeed struct {
+	Channel     string          `json:"channel"`
+	Period      string          `json:"period"`
+	Shipments   []CODShipment   `json:"shipments"`
+	Remittances []CODRemittance `json:"remittances"`
+}
+
+// CODShipment is one COD parcel's lifecycle. Status is "delivered" (cash
+// collected, books a cod_sale) or "rto" (returned, no cash — lifecycle only).
+type CODShipment struct {
+	Entity     string      `json:"entity"`      // always "shipment"
+	ID         string      `json:"id"`          // shp_...
+	OrderID    string      `json:"order_id"`    // order_... this parcel fulfils
+	CODAmount  money.Money `json:"cod_amount"`  // gross collected at door, paise (0 for rto)
+	Status     string      `json:"status"`      // "delivered" | "rto"
+	ShippedAt  int64       `json:"shipped_at"`  // Unix seconds dispatched
+	ResolvedAt int64       `json:"resolved_at"` // Unix seconds delivered or returned
+	Notes      Notes       `json:"notes"`       // sku + gst_rate
+}
+
+// CODRemittance is one courier payout: the courier wires the collected COD cash
+// net of its collection fee + GST and per-shipment deductions. By construction
+// GrossCollected = NetDeposit + CollectionFee + GSTOnFee + Σ Deductions.
+type CODRemittance struct {
+	Entity         string         `json:"entity"`          // always "remittance"
+	ID             string         `json:"id"`              // rem_...
+	GrossCollected money.Money    `json:"gross_collected"` // total COD cash collected, paise
+	CollectionFee  money.Money    `json:"collection_fee"`  // courier's per-shipment COD fee, paise
+	GSTOnFee       money.Money    `json:"gst_on_fee"`      // GST on the collection fee, paise
+	NetDeposit     money.Money    `json:"net_deposit"`     // cash wired to bank, paise
+	UTR            string         `json:"utr"`             // bank UTR; matches a bank-feed credit ref
+	CreatedAt      int64          `json:"created_at"`      // Unix seconds (remittance date)
+	Deductions     []CODDeduction `json:"deductions"`      // per-shipment charges netted out
+}
+
+// CODDeduction is one charge the courier netted out beyond its collection fee:
+// an RTO fee ("RTO_CHG") or a weight-dispute adjustment ("WT_ADJ").
+type CODDeduction struct {
+	ID         string      `json:"id"`          // ded_... unique id (the entry's event id when booked)
+	Code       string      `json:"code"`        // "RTO_CHG" | "WT_ADJ"
+	ShipmentID string      `json:"shipment_id"` // shp_... this charge concerns
+	Amount     money.Money `json:"amount"`      // gross deducted, paise
+}
+
 // Fixtures bundles the Razorpay-shaped slices the seeder emits to razorpay/. It
 // is a convenience for passing the agent-input substrate around as one value;
 // each slice is written to its own file (SPEC §4.4). Orders are an agent-input
@@ -159,4 +228,7 @@ type Fixtures struct {
 	Settlements []Settlement
 	Disputes    []Dispute
 	Orders      []Order
+	// Courier is the optional COD-rail feed (cod.go); nil for Razorpay-only
+	// periods, in which case no courier-feed.json is written.
+	Courier *CourierFeed
 }

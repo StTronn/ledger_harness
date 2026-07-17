@@ -1,6 +1,6 @@
 package ledger
 
-import "github.com/razorpay/close-agent/internal/config"
+import "github.com/razorpay/ledger-flow/internal/config"
 
 // PlaybookChart adapts a *config.Playbook to the ledger's accountSet interface,
 // so a Ledger can validate posted accounts against the loaded chart and resolve
