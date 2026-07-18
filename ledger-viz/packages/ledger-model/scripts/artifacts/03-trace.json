@@ -1,0 +1,18 @@
+[
+  {
+    "schema_version": 1,
+    "event_id": "rfnd_2q9UwRRE21Gf2r",
+    "mode": "replay",
+    "input": {
+      "event_id": "rfnd_2q9UwRRE21Gf2r",
+      "type": "refund",
+      "amount": 248591,
+      "sku": "KIT-DELUXE"
+    },
+    "tools_used": [
+      "orders.fetch"
+    ],
+    "decision": {},
+    "rationale": "rule miss \"missing gst_rate\" on refund event is not a payment the classify agent recovers in v1"
+  }
+]

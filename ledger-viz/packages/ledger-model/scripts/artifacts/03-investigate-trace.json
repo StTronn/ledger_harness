@@ -1,0 +1,48 @@
+[
+  {
+    "schema_version": 1,
+    "break_key": "check3:receivable-residual:",
+    "mode": "replay",
+    "input": {
+      "key": "check3:receivable-residual:",
+      "check": 3,
+      "kind": "receivable-residual",
+      "expected": 0,
+      "actual": 248591,
+      "candidates": [
+        "setl_7cUMy0YEFbweo4",
+        "setl_dAucqgDBfKPA3r",
+        "setl_MAydKrgohLKmSv",
+        "setl_f8ZtZfgB4VEJI5",
+        "setl_alKiQc8PYUtJXC",
+        "setl_QUOWyYeO7IdSFi"
+      ],
+      "detail": "settlement-receivable residual 2485.91 at period end exceeds in-transit allowance 0.00 (balance 2485.91)"
+    },
+    "candidates": [
+      {
+        "event_id": "rfnd_2q9UwRRE21Gf2r",
+        "type": "refund",
+        "amount": 248591,
+        "sku": "KIT-DELUXE"
+      }
+    ],
+    "tools_used": [
+      "orders.fetch"
+    ],
+    "decision": {
+      "resolution": [
+        {
+          "event_id": "rfnd_2q9UwRRE21Gf2r",
+          "entry_type": "refund_reversal",
+          "params": {
+            "gst": 37921,
+            "net": 210670,
+            "refund_id": 0
+          }
+        }
+      ]
+    },
+    "rationale": "settlement-receivable residual 2485.91 traced to 1 unbooked refund(s); fetched each refund's order, recovered its gst_rate, and booked the refund_reversal so the receivable clears"
+  }
+]

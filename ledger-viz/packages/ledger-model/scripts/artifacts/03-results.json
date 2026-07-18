@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "world": "dtc",
+  "period": "2026-03",
+  "results": [
+    {
+      "event_id": "rfnd_2q9UwRRE21Gf2r",
+      "status": "escalated",
+      "reason": "v1 classify recovers only payments; refund is not supported",
+      "tools_used": [
+        "getOrder"
+      ]
+    }
+  ]
+}

@@ -35,7 +35,7 @@ export function ModeToggle() {
     <div
       role="radiogroup"
       aria-label="Theme"
-      className="inline-flex items-center gap-0.5 border border-border bg-card p-0.5"
+      className="inline-flex items-center gap-0.5 rounded-none border border-border bg-muted/50 p-0.5"
     >
       {ORDER.map((mode) => {
         const Icon = ICONS[mode];
@@ -53,7 +53,7 @@ export function ModeToggle() {
               "inline-flex size-7 items-center justify-center rounded-none text-muted-foreground transition-colors",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               "hover:text-foreground",
-              selected && "bg-secondary text-foreground",
+              selected && "bg-card text-foreground ring-1 ring-border",
             )}
           >
             <Icon className="size-3.5" />

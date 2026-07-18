@@ -1,0 +1,59 @@
+{
+  "break": {
+    "key": "check3:cod-receivable-residual:rem_JhhdZRSPoTgVKk",
+    "check": 3,
+    "kind": "cod-receivable-residual",
+    "settlement_id": "rem_JhhdZRSPoTgVKk",
+    "expected": 0,
+    "actual": 15800,
+    "detail": "cod-receivable residual 158.00 at period end: the courier netted deductions out of the remittance that no rule booked"
+  },
+  "batch": [
+    {
+      "event_id": "rem_JhhdZRSPoTgVKk",
+      "type": "cod_remittance",
+      "amount": 1660446,
+      "booked": true
+    }
+  ],
+  "deductions": [
+    {
+      "id": "ded_EXyhTbTLa0Kri8",
+      "code": "RTO_CHG",
+      "shipment_id": "shp_7eU3QlOHagljU4",
+      "shipment_status": "rto",
+      "amount": 11800,
+      "rate_card_backed": true,
+      "entry_type": "rto_fee",
+      "gst_rate": "18",
+      "_source": {
+        "object": "ratecard/delhivery",
+        "path": "rto_fee_paise"
+      },
+      "note": "RTO fee matches the contracted rate card (118.00) and shipment shp_7eU3QlOHagljU4 is confirmed returned to origin"
+    },
+    {
+      "id": "ded_wxgFQAEpGYmxVG",
+      "code": "WT_ADJ",
+      "shipment_id": "shp_apwz4qY534b56I",
+      "shipment_status": "delivered",
+      "amount": 4000,
+      "rate_card_backed": false,
+      "_source": {
+        "object": "",
+        "path": ""
+      },
+      "note": "deduction WT_ADJ has no rate-card basis (not a contracted charge); needs the courier's supporting document"
+    }
+  ],
+  "candidates": [
+    "rem_JhhdZRSPoTgVKk"
+  ],
+  "applicable_entry_types": [
+    "rto_fee"
+  ],
+  "accounts": {
+    "assets/cod-receivable": 15800,
+    "assets/razorpay-settlement-receivable": 0
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "world": "dtc",
+  "period": "2026-02",
+  "resolutions": [
+    {
+      "break_key": "check3:cod-receivable-residual:rem_JhhdZRSPoTgVKk",
+      "resolution": [
+        {
+          "event_id": "ded_EXyhTbTLa0Kri8",
+          "entry_type": "rto_fee",
+          "params": {
+            "gst": 1800,
+            "net": 10000,
+            "shipment_id": 0
+          }
+        }
+      ],
+      "rationale": "cod-receivable residual 158.00 decomposed against the remittance: booked 1 rate-card-backed rto_fee deduction(s) (RTO confirmed on the courier feed)",
+      "tools_used": [
+        "ratecard.fetch",
+        "courier.fetch"
+      ],
+      "escalate": true,
+      "reason": "unverified courier deduction(s) with no rate-card basis — request the courier's supporting document: WT_ADJ 40.00: deduction WT_ADJ has no rate-card basis (not a contracted charge); needs the courier's supporting document"
+    }
+  ]
+}

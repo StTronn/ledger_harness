@@ -1,0 +1,43 @@
+{
+  "event": {
+    "event_id": "rfnd_ZtHFpyTP2I9NSz",
+    "type": "refund",
+    "amount": 28128,
+    "order_id": "order_jTYHxOWgY2SlPF",
+    "gst_rate": "18",
+    "sku": "MASK-5PK",
+    "parent_amount": 70321,
+    "booked": false
+  },
+  "order_items": [
+    {
+      "sku": "MASK-5PK",
+      "amount": 28128,
+      "gst_rate": "18"
+    },
+    {
+      "sku": "MASK-5PK-ADDON",
+      "amount": 42193,
+      "gst_rate": "18"
+    }
+  ],
+  "candidates": [
+    {
+      "kind": "item-match",
+      "entry_type": "refund_reversal",
+      "gst_rate": "18",
+      "items": [
+        0
+      ],
+      "_source": {
+        "object": "order_jTYHxOWgY2SlPF",
+        "path": "items.0"
+      },
+      "note": "refund equals line item 0 (MASK-5PK)"
+    }
+  ],
+  "applicable_entry_types": [
+    "refund_reversal",
+    "price_adjustment"
+  ]
+}

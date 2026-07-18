@@ -1,0 +1,82 @@
+{
+  "meta": {
+    "world": "dtc",
+    "period": "2026-02",
+    "title": "The courier payout",
+    "symbol": "₹",
+    "minorPerMajor": 100,
+    "courier": "delhivery"
+  },
+  "remittance": {
+    "id": "rem_JhhdZRSPoTgVKk",
+    "utr": "UTRJhhdZRSPoTgVKk",
+    "grossCollected": 1711646,
+    "collectionFee": 30000,
+    "gstOnFee": 5400,
+    "netDeposit": 1660446,
+    "deductionsTotal": 15800
+  },
+  "lifecycle": {
+    "delivered": 6,
+    "rto": 1
+  },
+  "residualBefore": 15800,
+  "residualAfter": 15800,
+  "breakDetail": "cod-receivable residual 158.00 at period end: the courier netted deductions out of the remittance that no rule booked",
+  "deductions": [
+    {
+      "id": "ded_EXyhTbTLa0Kri8",
+      "code": "RTO_CHG",
+      "label": "Return-to-origin fee",
+      "shipmentId": "shp_7eU3QlOHagljU4",
+      "shipmentStatus": "rto",
+      "amount": 11800,
+      "backed": true,
+      "verdict": "supported",
+      "entryType": "rto_fee",
+      "gstRate": "18",
+      "citation": {
+        "object": "ratecard/delhivery",
+        "path": "rto_fee_paise"
+      },
+      "note": "RTO fee matches the contracted rate card (118.00) and shipment shp_7eU3QlOHagljU4 is confirmed returned to origin",
+      "postings": [
+        {
+          "side": "Dr",
+          "account": "expense/reverse-logistics",
+          "amount": 10000
+        },
+        {
+          "side": "Dr",
+          "account": "expense/gst-input",
+          "amount": 1800
+        },
+        {
+          "side": "Cr",
+          "account": "assets/cod-receivable",
+          "amount": 11800
+        }
+      ]
+    },
+    {
+      "id": "ded_wxgFQAEpGYmxVG",
+      "code": "WT_ADJ",
+      "label": "Weight-dispute adjustment",
+      "shipmentId": "shp_apwz4qY534b56I",
+      "shipmentStatus": "delivered",
+      "amount": 4000,
+      "backed": false,
+      "verdict": "escalate",
+      "note": "deduction WT_ADJ has no rate-card basis (not a contracted charge); needs the courier's supporting document",
+      "postings": []
+    }
+  ],
+  "baseline": {
+    "scorePct": 95,
+    "missing": 2
+  },
+  "final": {
+    "scorePct": 95,
+    "missing": 2
+  }
+}

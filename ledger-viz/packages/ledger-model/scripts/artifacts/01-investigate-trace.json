@@ -1,0 +1,44 @@
+[
+  {
+    "schema_version": 1,
+    "break_key": "check3:receivable-residual:",
+    "mode": "replay",
+    "input": {
+      "key": "check3:receivable-residual:",
+      "check": 3,
+      "kind": "receivable-residual",
+      "expected": 0,
+      "actual": 170873,
+      "candidates": [
+        "setl_rD7bZInPVl8xSJ",
+        "setl_Vs3QsVmSWsRTUj",
+        "setl_yDFVNgz8cBpz0H",
+        "setl_lxRm4NYMQsuldj",
+        "setl_0uA1PjE0UbCUjH",
+        "setl_OKd3fdnZZGslUH"
+      ],
+      "detail": "settlement-receivable residual 1708.73 at period end exceeds in-transit allowance 0.00 (balance 1708.73)"
+    },
+    "candidates": [
+      {
+        "event_id": "rfnd_YODsk1r0xPB47u",
+        "type": "refund",
+        "amount": 135299,
+        "gst_rate": "18",
+        "sku": "MASK-5PK"
+      },
+      {
+        "event_id": "rfnd_jWwN1ErzEObBK2",
+        "type": "refund",
+        "amount": 35574,
+        "gst_rate": "12",
+        "sku": "KIT-DELUXE"
+      }
+    ],
+    "tools_used": [
+      "orders.fetch"
+    ],
+    "decision": {},
+    "rationale": "residual traces to 2 PARTIAL refund(s) whose intent (return vs goodwill credit) is unrecoverable from the snapshot — escalating to a human, never guessing"
+  }
+]

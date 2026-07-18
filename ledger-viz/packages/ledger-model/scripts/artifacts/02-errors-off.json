@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "world": "dtc",
+  "period": "2026-02",
+  "score_pct": 95,
+  "trial_balance_matches": false,
+  "totals": {
+    "truth_entries": 46,
+    "correct": 44,
+    "wrong": 0,
+    "missing": 2,
+    "extra": 0
+  },
+  "per_account_deltas": [
+    {
+      "account": "assets/bank",
+      "got_balance": 7578468,
+      "want_balance": 7578468,
+      "delta": 0
+    },
+    {
+      "account": "assets/cod-receivable",
+      "got_balance": 15800,
+      "want_balance": 0,
+      "delta": 15800
+    },
+    {
+      "account": "assets/razorpay-settlement-receivable",
+      "got_balance": 0,
+      "want_balance": 0,
+      "delta": 0
+    },
+    {
+      "account": "expense/cod-collection-fees",
+      "got_balance": 30000,
+      "want_balance": 30000,
+      "delta": 0
+    },
+    {
+      "account": "expense/gst-input",
+      "got_balance": 31457,
+      "want_balance": 33257,
+      "delta": -1800
+    },
+    {
+      "account": "expense/processor-fees",
+      "got_balance": 144849,
+      "want_balance": 144849,
+      "delta": 0
+    },
+    {
+      "account": "expense/reverse-logistics",
+      "got_balance": 0,
+      "want_balance": 14000,
+      "delta": -14000
+    },
+    {
+      "account": "income/product-sales",
+      "got_balance": 8132675,
+      "want_balance": 8132675,
+      "delta": 0
+    },
+    {
+      "account": "income/sales-returns",
+      "got_balance": -978138,
+      "want_balance": -978138,
+      "delta": 0
+    },
+    {
+      "account": "liabilities/gst-output-payable",
+      "got_balance": 646037,
+      "want_balance": 646037,
+      "delta": 0
+    }
+  ],
+  "errors": [
+    {
+      "event_id": "ded_EXyhTbTLa0Kri8",
+      "error_class": "missing",
+      "want": "rto_fee: Cr assets/cod-receivable 118.00, Dr expense/gst-input 18.00, Dr expense/reverse-logistics 100.00"
+    },
+    {
+      "event_id": "ded_wxgFQAEpGYmxVG",
+      "error_class": "missing",
+      "want": "weight_adjustment: Cr assets/cod-receivable 40.00, Dr expense/reverse-logistics 40.00"
+    }
+  ]
+}

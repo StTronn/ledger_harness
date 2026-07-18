@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "channels": [
+    {
+      "channel": "razorpay",
+      "fee_bps": 200,
+      "fee_gst_rate": 18
+    },
+    {
+      "channel": "delhivery",
+      "fee_bps": 0,
+      "fee_gst_rate": 18,
+      "cod_fee_paise": 5000,
+      "rto_fee_paise": 10000
+    }
+  ]
+}

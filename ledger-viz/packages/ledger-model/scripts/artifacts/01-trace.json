@@ -1,0 +1,60 @@
+[
+  {
+    "schema_version": 1,
+    "event_id": "rfnd_ZtHFpyTP2I9NSz",
+    "mode": "replay",
+    "input": {
+      "event_id": "rfnd_ZtHFpyTP2I9NSz",
+      "type": "refund",
+      "amount": 28128,
+      "gst_rate": "18",
+      "sku": "MASK-5PK"
+    },
+    "tools_used": [
+      "orders.fetch"
+    ],
+    "decision": {
+      "entry_type": "refund_reversal",
+      "params": {
+        "gst": 4291,
+        "net": 23837,
+        "refund_id": 0
+      }
+    },
+    "rationale": "partial refund rfnd_ZtHFpyTP2I9NSz of 281.28 equals line item order_jTYHxOWgY2SlPF/items.0 (MASK-5PK) — booked the line-item return as a refund_reversal at 18%"
+  },
+  {
+    "schema_version": 1,
+    "event_id": "rfnd_YODsk1r0xPB47u",
+    "mode": "replay",
+    "input": {
+      "event_id": "rfnd_YODsk1r0xPB47u",
+      "type": "refund",
+      "amount": 135299,
+      "gst_rate": "18",
+      "sku": "MASK-5PK"
+    },
+    "tools_used": [
+      "orders.fetch"
+    ],
+    "decision": {},
+    "rationale": "partial refund rfnd_YODsk1r0xPB47u is annotated \"goodwill\" — a goodwill/manual credit is a human policy call, not an agent booking"
+  },
+  {
+    "schema_version": 1,
+    "event_id": "rfnd_jWwN1ErzEObBK2",
+    "mode": "replay",
+    "input": {
+      "event_id": "rfnd_jWwN1ErzEObBK2",
+      "type": "refund",
+      "amount": 35574,
+      "gst_rate": "12",
+      "sku": "KIT-DELUXE"
+    },
+    "tools_used": [
+      "orders.fetch"
+    ],
+    "decision": {},
+    "rationale": "partial refund rfnd_jWwN1ErzEObBK2 of 355.74 matches no line item or pair of order order_KPX5Tr5yQOKBXZ — unexplained partial credit needs a human"
+  }
+]

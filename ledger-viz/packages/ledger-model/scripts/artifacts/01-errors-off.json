@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "world": "dtc",
+  "period": "2026-01",
+  "score_pct": 93,
+  "trial_balance_matches": false,
+  "totals": {
+    "truth_entries": 48,
+    "correct": 45,
+    "wrong": 0,
+    "missing": 3,
+    "extra": 0
+  },
+  "per_account_deltas": [
+    {
+      "account": "assets/bank",
+      "got_balance": 8093872,
+      "want_balance": 8093872,
+      "delta": 0
+    },
+    {
+      "account": "assets/razorpay-settlement-receivable",
+      "got_balance": 199001,
+      "want_balance": 0,
+      "delta": 199001
+    },
+    {
+      "account": "expense/chargeback-loss",
+      "got_balance": 339882,
+      "want_balance": 339882,
+      "delta": 0
+    },
+    {
+      "account": "expense/gst-input",
+      "got_balance": 34188,
+      "want_balance": 34188,
+      "delta": 0
+    },
+    {
+      "account": "expense/processor-fees",
+      "got_balance": 190024,
+      "want_balance": 190024,
+      "delta": 0
+    },
+    {
+      "account": "income/discounts-allowances",
+      "got_balance": 0,
+      "want_balance": -146422,
+      "delta": 146422
+    },
+    {
+      "account": "income/product-sales",
+      "got_balance": 8388567,
+      "want_balance": 8388567,
+      "delta": 0
+    },
+    {
+      "account": "income/sales-returns",
+      "got_balance": -544128,
+      "want_balance": -567965,
+      "delta": 23837
+    },
+    {
+      "account": "liabilities/gst-output-payable",
+      "got_balance": 1012528,
+      "want_balance": 983786,
+      "delta": 28742
+    }
+  ],
+  "errors": [
+    {
+      "event_id": "rfnd_YODsk1r0xPB47u",
+      "error_class": "missing",
+      "want": "price_adjustment: Cr assets/razorpay-settlement-receivable 1352.99, Dr income/discounts-allowances 1146.60, Dr liabilities/gst-output-payable 206.39"
+    },
+    {
+      "event_id": "rfnd_ZtHFpyTP2I9NSz",
+      "error_class": "missing",
+      "want": "refund_reversal: Cr assets/razorpay-settlement-receivable 281.28, Dr income/sales-returns 238.37, Dr liabilities/gst-output-payable 42.91"
+    },
+    {
+      "event_id": "rfnd_jWwN1ErzEObBK2",
+      "error_class": "missing",
+      "want": "price_adjustment: Cr assets/razorpay-settlement-receivable 355.74, Dr income/discounts-allowances 317.62, Dr liabilities/gst-output-payable 38.12"
+    }
+  ]
+}

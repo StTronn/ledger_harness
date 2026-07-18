@@ -1,0 +1,123 @@
+{
+  "channel": "delhivery",
+  "period": "2026-02",
+  "shipments": [
+    {
+      "entity": "shipment",
+      "id": "shp_aXGCDHn9J8uUnT",
+      "order_id": "order_UridyLzPLWGq6s",
+      "cod_amount": 445961,
+      "status": "delivered",
+      "shipped_at": 1770854400,
+      "resolved_at": 1771113600,
+      "notes": {
+        "sku": "KIT-DELUXE",
+        "gst_rate": "5"
+      }
+    },
+    {
+      "entity": "shipment",
+      "id": "shp_sDNxJmAKOHLa02",
+      "order_id": "order_ghAKSDwyQ0PlUh",
+      "cod_amount": 122633,
+      "status": "delivered",
+      "shipped_at": 1770854400,
+      "resolved_at": 1771113600,
+      "notes": {
+        "sku": "SERUM-30",
+        "gst_rate": "18"
+      }
+    },
+    {
+      "entity": "shipment",
+      "id": "shp_apwz4qY534b56I",
+      "order_id": "order_3sbLD0D2wdoRWc",
+      "cod_amount": 276581,
+      "status": "delivered",
+      "shipped_at": 1770854400,
+      "resolved_at": 1771113600,
+      "notes": {
+        "sku": "TONER-200",
+        "gst_rate": "5"
+      }
+    },
+    {
+      "entity": "shipment",
+      "id": "shp_00bCeldQTd0wpB",
+      "order_id": "order_thOkhsxlKheXAB",
+      "cod_amount": 151696,
+      "status": "delivered",
+      "shipped_at": 1770854400,
+      "resolved_at": 1771113600,
+      "notes": {
+        "sku": "SERUM-30",
+        "gst_rate": "12"
+      }
+    },
+    {
+      "entity": "shipment",
+      "id": "shp_A2s4zwbXCL9SjJ",
+      "order_id": "order_EfLRQOFRF7UBs2",
+      "cod_amount": 242663,
+      "status": "delivered",
+      "shipped_at": 1770854400,
+      "resolved_at": 1771113600,
+      "notes": {
+        "sku": "CREAM-50",
+        "gst_rate": "5"
+      }
+    },
+    {
+      "entity": "shipment",
+      "id": "shp_gn7eoQXWmKfwFt",
+      "order_id": "order_W8oMOrhIqUxSCC",
+      "cod_amount": 472112,
+      "status": "delivered",
+      "shipped_at": 1770854400,
+      "resolved_at": 1771113600,
+      "notes": {
+        "sku": "CREAM-50",
+        "gst_rate": "12"
+      }
+    },
+    {
+      "entity": "shipment",
+      "id": "shp_7eU3QlOHagljU4",
+      "order_id": "order_YvXLTlhoVdaD6g",
+      "cod_amount": 0,
+      "status": "rto",
+      "shipped_at": 1770854400,
+      "resolved_at": 1771113600,
+      "notes": {
+        "sku": "MASK-5PK",
+        "gst_rate": "18"
+      }
+    }
+  ],
+  "remittances": [
+    {
+      "entity": "remittance",
+      "id": "rem_JhhdZRSPoTgVKk",
+      "gross_collected": 1711646,
+      "collection_fee": 30000,
+      "gst_on_fee": 5400,
+      "net_deposit": 1660446,
+      "utr": "UTRJhhdZRSPoTgVKk",
+      "created_at": 1771718400,
+      "deductions": [
+        {
+          "id": "ded_EXyhTbTLa0Kri8",
+          "code": "RTO_CHG",
+          "shipment_id": "shp_7eU3QlOHagljU4",
+          "amount": 11800
+        },
+        {
+          "id": "ded_wxgFQAEpGYmxVG",
+          "code": "WT_ADJ",
+          "shipment_id": "shp_apwz4qY534b56I",
+          "amount": 4000
+        }
+      ]
+    }
+  ]
+}

@@ -37,13 +37,14 @@ export function Cell({ value, meta, muted, className }: CellProps) {
       ) : (
         <span
           className={cn(
+            "tracking-tight",
             muted
-              ? "text-muted-foreground/75"
+              ? "text-muted-foreground/70"
               : positive
-                ? "text-emerald-600 dark:text-emerald-400"
+                ? "font-medium text-debit"
                 : negative
-                  ? "text-rose-600 dark:text-rose-400"
-                  : "text-muted-foreground/60",
+                  ? "text-credit"
+                  : "text-muted-foreground/55",
           )}
         >
           {formatMoney(value as number, meta)}

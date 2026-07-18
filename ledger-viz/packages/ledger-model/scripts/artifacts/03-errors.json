@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "world": "dtc",
+  "period": "2026-03",
+  "score_pct": 97,
+  "trial_balance_matches": false,
+  "totals": {
+    "truth_entries": 38,
+    "correct": 37,
+    "wrong": 0,
+    "missing": 1,
+    "extra": 0
+  },
+  "per_account_deltas": [
+    {
+      "account": "assets/bank",
+      "got_balance": 5515038,
+      "want_balance": 5515038,
+      "delta": 0
+    },
+    {
+      "account": "assets/razorpay-settlement-receivable",
+      "got_balance": 248591,
+      "want_balance": 0,
+      "delta": 248591
+    },
+    {
+      "account": "expense/chargeback-loss",
+      "got_balance": 714612,
+      "want_balance": 714612,
+      "delta": 0
+    },
+    {
+      "account": "expense/gst-input",
+      "got_balance": 24347,
+      "want_balance": 24347,
+      "delta": 0
+    },
+    {
+      "account": "expense/processor-fees",
+      "got_balance": 135334,
+      "want_balance": 135334,
+      "delta": 0
+    },
+    {
+      "account": "income/product-sales",
+      "got_balance": 6133281,
+      "want_balance": 6133281,
+      "delta": 0
+    },
+    {
+      "account": "income/sales-returns",
+      "got_balance": -69780,
+      "want_balance": -280450,
+      "delta": 210670
+    },
+    {
+      "account": "liabilities/gst-output-payable",
+      "got_balance": 574421,
+      "want_balance": 536500,
+      "delta": 37921
+    }
+  ],
+  "errors": [
+    {
+      "event_id": "rfnd_2q9UwRRE21Gf2r",
+      "error_class": "missing",
+      "want": "refund_reversal: Cr assets/razorpay-settlement-receivable 2485.91, Dr income/sales-returns 2106.70, Dr liabilities/gst-output-payable 379.21"
+    }
+  ]
+}

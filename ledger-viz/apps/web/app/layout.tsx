@@ -17,7 +17,7 @@ const mono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Ledger Viz",
-  description: "Double-entry ledger as a transaction matrix with playback.",
+  description: "A double-entry ledger with explainable posting and recovery.",
 };
 
 export default function RootLayout({

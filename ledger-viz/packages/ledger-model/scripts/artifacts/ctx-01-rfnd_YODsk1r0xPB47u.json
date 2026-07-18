@@ -1,0 +1,39 @@
+{
+  "event": {
+    "event_id": "rfnd_YODsk1r0xPB47u",
+    "type": "refund",
+    "amount": 135299,
+    "order_id": "order_eaMwq2HKxcje2u",
+    "gst_rate": "18",
+    "sku": "MASK-5PK",
+    "reason": "goodwill",
+    "parent_amount": 450996,
+    "booked": false
+  },
+  "order_items": [
+    {
+      "sku": "MASK-5PK",
+      "amount": 180398,
+      "gst_rate": "18"
+    },
+    {
+      "sku": "MASK-5PK-ADDON",
+      "amount": 270598,
+      "gst_rate": "18"
+    }
+  ],
+  "candidates": [
+    {
+      "kind": "no-match",
+      "_source": {
+        "object": "",
+        "path": ""
+      },
+      "note": "no line item or pair sums to the refund — goodwill credit (price_adjustment) or escalation territory"
+    }
+  ],
+  "applicable_entry_types": [
+    "refund_reversal",
+    "price_adjustment"
+  ]
+}

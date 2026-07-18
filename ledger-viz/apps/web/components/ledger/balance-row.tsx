@@ -35,16 +35,16 @@ export function BalanceRow({
       className={cn(
         "flex",
         isCurrent
-          ? "border-b border-dashed border-border/70 bg-primary/[0.04]"
-          : "border-t border-dashed border-border/60",
+          ? "border-y border-brand/30 bg-brand-soft"
+          : "border-t-2 border-border/80 bg-muted/30",
       )}
     >
       <div
         className={cn(
-          "sticky left-0 z-10 flex shrink-0 items-center py-2.5 pr-4 text-[10px] font-semibold uppercase tracking-[0.16em]",
+          "sticky left-0 z-10 flex shrink-0 items-center py-3 pr-4 text-[10px] font-semibold uppercase tracking-[0.16em]",
           isCurrent
-            ? "border-l-2 border-primary bg-primary/[0.04] pl-[14px] text-foreground/70"
-            : "bg-card pl-4 text-muted-foreground/50",
+            ? "border-l-2 border-brand bg-brand-soft pl-[14px] text-foreground/80"
+            : "bg-muted/30 pl-4 text-muted-foreground/60",
         )}
         style={{ width: GUTTER_W }}
       >

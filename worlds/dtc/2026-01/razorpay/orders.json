@@ -1,0 +1,827 @@
+[
+  {
+    "entity": "order",
+    "id": "order_jTYHxOWgY2SlPF",
+    "amount": 70321,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_jTYHxOWgY2SlPF",
+    "created_at": 1767398100,
+    "notes": {
+      "sku": "MASK-5PK",
+      "gst_rate": "18"
+    },
+    "items": [
+      {
+        "sku": "MASK-5PK",
+        "amount": 28128,
+        "gst_rate": "18"
+      },
+      {
+        "sku": "MASK-5PK-ADDON",
+        "amount": 42193,
+        "gst_rate": "18"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_H7dFwSG4AFaIJA",
+    "amount": 126113,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_H7dFwSG4AFaIJA",
+    "created_at": 1767398100,
+    "notes": {
+      "sku": "CREAM-50",
+      "gst_rate": "18"
+    },
+    "items": [
+      {
+        "sku": "CREAM-50",
+        "amount": 50445,
+        "gst_rate": "18"
+      },
+      {
+        "sku": "CREAM-50-ADDON",
+        "amount": 75668,
+        "gst_rate": "18"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_ZZvD8hJSTtZTgX",
+    "amount": 497187,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_ZZvD8hJSTtZTgX",
+    "created_at": 1767398100,
+    "notes": {
+      "sku": "MASK-5PK",
+      "gst_rate": "18"
+    },
+    "items": [
+      {
+        "sku": "MASK-5PK",
+        "amount": 198874,
+        "gst_rate": "18"
+      },
+      {
+        "sku": "MASK-5PK-ADDON",
+        "amount": 298313,
+        "gst_rate": "18"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_2WNPjllySexKfK",
+    "amount": 101248,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_2WNPjllySexKfK",
+    "created_at": 1767398100,
+    "notes": {
+      "sku": "SERUM-30",
+      "gst_rate": "12"
+    },
+    "items": [
+      {
+        "sku": "SERUM-30",
+        "amount": 40499,
+        "gst_rate": "12"
+      },
+      {
+        "sku": "SERUM-30-ADDON",
+        "amount": 60749,
+        "gst_rate": "12"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_8TcXoGuMZRmYOQ",
+    "amount": 391415,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_8TcXoGuMZRmYOQ",
+    "created_at": 1767398100,
+    "notes": {
+      "sku": "SERUM-30",
+      "gst_rate": "5"
+    },
+    "items": [
+      {
+        "sku": "SERUM-30",
+        "amount": 156566,
+        "gst_rate": "5"
+      },
+      {
+        "sku": "SERUM-30-ADDON",
+        "amount": 234849,
+        "gst_rate": "5"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_eaMwq2HKxcje2u",
+    "amount": 450996,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_eaMwq2HKxcje2u",
+    "created_at": 1767743700,
+    "notes": {
+      "sku": "MASK-5PK",
+      "gst_rate": "18"
+    },
+    "items": [
+      {
+        "sku": "MASK-5PK",
+        "amount": 180398,
+        "gst_rate": "18"
+      },
+      {
+        "sku": "MASK-5PK-ADDON",
+        "amount": 270598,
+        "gst_rate": "18"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_HbLJz9975yUF7d",
+    "amount": 296310,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_HbLJz9975yUF7d",
+    "created_at": 1767743700,
+    "notes": {
+      "sku": "SERUM-30",
+      "gst_rate": "5"
+    },
+    "items": [
+      {
+        "sku": "SERUM-30",
+        "amount": 118524,
+        "gst_rate": "5"
+      },
+      {
+        "sku": "SERUM-30-ADDON",
+        "amount": 177786,
+        "gst_rate": "5"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_5Z8i7MdYdyIrZ3",
+    "amount": 412591,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_5Z8i7MdYdyIrZ3",
+    "created_at": 1767743700,
+    "notes": {
+      "sku": "SERUM-30",
+      "gst_rate": "18"
+    },
+    "items": [
+      {
+        "sku": "SERUM-30",
+        "amount": 165036,
+        "gst_rate": "18"
+      },
+      {
+        "sku": "SERUM-30-ADDON",
+        "amount": 247555,
+        "gst_rate": "18"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_wA0iTn0FRIFTdX",
+    "amount": 398590,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_wA0iTn0FRIFTdX",
+    "created_at": 1767743700,
+    "notes": {
+      "sku": "SERUM-30",
+      "gst_rate": "18"
+    },
+    "items": [
+      {
+        "sku": "SERUM-30",
+        "amount": 159436,
+        "gst_rate": "18"
+      },
+      {
+        "sku": "SERUM-30-ADDON",
+        "amount": 239154,
+        "gst_rate": "18"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_LdjsCj5ODFTUtj",
+    "amount": 492641,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_LdjsCj5ODFTUtj",
+    "created_at": 1768089300,
+    "notes": {
+      "sku": "TONER-200",
+      "gst_rate": "12"
+    },
+    "items": [
+      {
+        "sku": "TONER-200",
+        "amount": 197056,
+        "gst_rate": "12"
+      },
+      {
+        "sku": "TONER-200-ADDON",
+        "amount": 295585,
+        "gst_rate": "12"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_KPX5Tr5yQOKBXZ",
+    "amount": 142286,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_KPX5Tr5yQOKBXZ",
+    "created_at": 1768089300,
+    "notes": {
+      "sku": "KIT-DELUXE",
+      "gst_rate": "12"
+    },
+    "items": [
+      {
+        "sku": "KIT-DELUXE",
+        "amount": 56914,
+        "gst_rate": "12"
+      },
+      {
+        "sku": "KIT-DELUXE-ADDON",
+        "amount": 85372,
+        "gst_rate": "12"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_E3kWPl4AGtBiE2",
+    "amount": 235767,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_E3kWPl4AGtBiE2",
+    "created_at": 1768089300,
+    "notes": {
+      "sku": "TONER-200",
+      "gst_rate": "18"
+    },
+    "items": [
+      {
+        "sku": "TONER-200",
+        "amount": 94306,
+        "gst_rate": "18"
+      },
+      {
+        "sku": "TONER-200-ADDON",
+        "amount": 141461,
+        "gst_rate": "18"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_2hIe5iceo68BBV",
+    "amount": 439586,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_2hIe5iceo68BBV",
+    "created_at": 1768089300,
+    "notes": {
+      "sku": "MASK-5PK",
+      "gst_rate": "5"
+    },
+    "items": [
+      {
+        "sku": "MASK-5PK",
+        "amount": 175834,
+        "gst_rate": "5"
+      },
+      {
+        "sku": "MASK-5PK-ADDON",
+        "amount": 263752,
+        "gst_rate": "5"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_zFPbsQJ3CGjPPp",
+    "amount": 220685,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_zFPbsQJ3CGjPPp",
+    "created_at": 1768089300,
+    "notes": {
+      "sku": "TONER-200",
+      "gst_rate": "5"
+    },
+    "items": [
+      {
+        "sku": "TONER-200",
+        "amount": 88274,
+        "gst_rate": "5"
+      },
+      {
+        "sku": "TONER-200-ADDON",
+        "amount": 132411,
+        "gst_rate": "5"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_7JTRwXlbPoh2MH",
+    "amount": 75134,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_7JTRwXlbPoh2MH",
+    "created_at": 1768089300,
+    "notes": {
+      "sku": "KIT-DELUXE",
+      "gst_rate": "5"
+    },
+    "items": [
+      {
+        "sku": "KIT-DELUXE",
+        "amount": 30053,
+        "gst_rate": "5"
+      },
+      {
+        "sku": "KIT-DELUXE-ADDON",
+        "amount": 45081,
+        "gst_rate": "5"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_p1XxTwSGG9IguD",
+    "amount": 118611,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_p1XxTwSGG9IguD",
+    "created_at": 1768089300,
+    "notes": {
+      "sku": "MASK-5PK",
+      "gst_rate": "18"
+    },
+    "items": [
+      {
+        "sku": "MASK-5PK",
+        "amount": 47444,
+        "gst_rate": "18"
+      },
+      {
+        "sku": "MASK-5PK-ADDON",
+        "amount": 71167,
+        "gst_rate": "18"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_dZkoEopR4Nnoq1",
+    "amount": 106081,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_dZkoEopR4Nnoq1",
+    "created_at": 1768434900,
+    "notes": {
+      "sku": "TONER-200",
+      "gst_rate": "18"
+    },
+    "items": [
+      {
+        "sku": "TONER-200",
+        "amount": 42432,
+        "gst_rate": "18"
+      },
+      {
+        "sku": "TONER-200-ADDON",
+        "amount": 63649,
+        "gst_rate": "18"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_zTUdW8w74wfFMm",
+    "amount": 128140,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_zTUdW8w74wfFMm",
+    "created_at": 1768434900,
+    "notes": {
+      "sku": "SERUM-30",
+      "gst_rate": "18"
+    },
+    "items": [
+      {
+        "sku": "SERUM-30",
+        "amount": 51256,
+        "gst_rate": "18"
+      },
+      {
+        "sku": "SERUM-30-ADDON",
+        "amount": 76884,
+        "gst_rate": "18"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_bPQ8jUaBTt0AiX",
+    "amount": 322654,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_bPQ8jUaBTt0AiX",
+    "created_at": 1768434900,
+    "notes": {
+      "sku": "KIT-DELUXE",
+      "gst_rate": "18"
+    },
+    "items": [
+      {
+        "sku": "KIT-DELUXE",
+        "amount": 129061,
+        "gst_rate": "18"
+      },
+      {
+        "sku": "KIT-DELUXE-ADDON",
+        "amount": 193593,
+        "gst_rate": "18"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_MuZhFb6Nk5VcBv",
+    "amount": 218911,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_MuZhFb6Nk5VcBv",
+    "created_at": 1768434900,
+    "notes": {
+      "sku": "CREAM-50",
+      "gst_rate": "18"
+    },
+    "items": [
+      {
+        "sku": "CREAM-50",
+        "amount": 87564,
+        "gst_rate": "18"
+      },
+      {
+        "sku": "CREAM-50-ADDON",
+        "amount": 131347,
+        "gst_rate": "18"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_J1hLPbGaOtSrHC",
+    "amount": 407912,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_J1hLPbGaOtSrHC",
+    "created_at": 1768434900,
+    "notes": {
+      "sku": "KIT-DELUXE",
+      "gst_rate": "18"
+    },
+    "items": [
+      {
+        "sku": "KIT-DELUXE",
+        "amount": 163164,
+        "gst_rate": "18"
+      },
+      {
+        "sku": "KIT-DELUXE-ADDON",
+        "amount": 244748,
+        "gst_rate": "18"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_6JOZaeJcDVHGR0",
+    "amount": 262483,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_6JOZaeJcDVHGR0",
+    "created_at": 1768434900,
+    "notes": {
+      "sku": "CREAM-50",
+      "gst_rate": "5"
+    },
+    "items": [
+      {
+        "sku": "CREAM-50",
+        "amount": 104993,
+        "gst_rate": "5"
+      },
+      {
+        "sku": "CREAM-50-ADDON",
+        "amount": 157490,
+        "gst_rate": "5"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_TvEY98iYEza7ca",
+    "amount": 392969,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_TvEY98iYEza7ca",
+    "created_at": 1768434900,
+    "notes": {
+      "sku": "KIT-DELUXE",
+      "gst_rate": "5"
+    },
+    "items": [
+      {
+        "sku": "KIT-DELUXE",
+        "amount": 157187,
+        "gst_rate": "5"
+      },
+      {
+        "sku": "KIT-DELUXE-ADDON",
+        "amount": 235782,
+        "gst_rate": "5"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_rZEKrJ8SDrap6z",
+    "amount": 222635,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_rZEKrJ8SDrap6z",
+    "created_at": 1768953300,
+    "notes": {
+      "sku": "SERUM-30",
+      "gst_rate": "18"
+    },
+    "items": [
+      {
+        "sku": "SERUM-30",
+        "amount": 89054,
+        "gst_rate": "18"
+      },
+      {
+        "sku": "SERUM-30-ADDON",
+        "amount": 133581,
+        "gst_rate": "18"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_lp491QvMMD6afa",
+    "amount": 55127,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_lp491QvMMD6afa",
+    "created_at": 1768953300,
+    "notes": {
+      "sku": "TONER-200",
+      "gst_rate": "12"
+    },
+    "items": [
+      {
+        "sku": "TONER-200",
+        "amount": 22050,
+        "gst_rate": "12"
+      },
+      {
+        "sku": "TONER-200-ADDON",
+        "amount": 33077,
+        "gst_rate": "12"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_vE2ikZUKL4AZcc",
+    "amount": 206496,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_vE2ikZUKL4AZcc",
+    "created_at": 1768953300,
+    "notes": {
+      "sku": "MASK-5PK",
+      "gst_rate": "12"
+    },
+    "items": [
+      {
+        "sku": "MASK-5PK",
+        "amount": 82598,
+        "gst_rate": "12"
+      },
+      {
+        "sku": "MASK-5PK-ADDON",
+        "amount": 123898,
+        "gst_rate": "12"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_oXkPo5fR0eSsAK",
+    "amount": 419913,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_oXkPo5fR0eSsAK",
+    "created_at": 1768953300,
+    "notes": {
+      "sku": "SERUM-30",
+      "gst_rate": "18"
+    },
+    "items": [
+      {
+        "sku": "SERUM-30",
+        "amount": 167965,
+        "gst_rate": "18"
+      },
+      {
+        "sku": "SERUM-30-ADDON",
+        "amount": 251948,
+        "gst_rate": "18"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_Uhfgfcpy2aRCf8",
+    "amount": 378804,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_Uhfgfcpy2aRCf8",
+    "created_at": 1768953300,
+    "notes": {
+      "sku": "TONER-200",
+      "gst_rate": "5"
+    },
+    "items": [
+      {
+        "sku": "TONER-200",
+        "amount": 151521,
+        "gst_rate": "5"
+      },
+      {
+        "sku": "TONER-200-ADDON",
+        "amount": 227283,
+        "gst_rate": "5"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_m5dQrEgQh8j7Z2",
+    "amount": 441119,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_m5dQrEgQh8j7Z2",
+    "created_at": 1768953300,
+    "notes": {
+      "sku": "TONER-200",
+      "gst_rate": "18"
+    },
+    "items": [
+      {
+        "sku": "TONER-200",
+        "amount": 176447,
+        "gst_rate": "18"
+      },
+      {
+        "sku": "TONER-200-ADDON",
+        "amount": 264672,
+        "gst_rate": "18"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_75DJ9RsbWHQAxB",
+    "amount": 250376,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_75DJ9RsbWHQAxB",
+    "created_at": 1768953300,
+    "notes": {
+      "sku": "KIT-DELUXE",
+      "gst_rate": "12"
+    },
+    "items": [
+      {
+        "sku": "KIT-DELUXE",
+        "amount": 100150,
+        "gst_rate": "12"
+      },
+      {
+        "sku": "KIT-DELUXE-ADDON",
+        "amount": 150226,
+        "gst_rate": "12"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_7rxOfwUdMaTjut",
+    "amount": 473331,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_7rxOfwUdMaTjut",
+    "created_at": 1769298900,
+    "notes": {
+      "sku": "TONER-200",
+      "gst_rate": "12"
+    },
+    "items": [
+      {
+        "sku": "TONER-200",
+        "amount": 189332,
+        "gst_rate": "12"
+      },
+      {
+        "sku": "TONER-200-ADDON",
+        "amount": 283999,
+        "gst_rate": "12"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_TeVKgLJlczzz5t",
+    "amount": 455168,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_TeVKgLJlczzz5t",
+    "created_at": 1769298900,
+    "notes": {
+      "sku": "TONER-200",
+      "gst_rate": "18"
+    },
+    "items": [
+      {
+        "sku": "TONER-200",
+        "amount": 182067,
+        "gst_rate": "18"
+      },
+      {
+        "sku": "TONER-200-ADDON",
+        "amount": 273101,
+        "gst_rate": "18"
+      }
+    ]
+  },
+  {
+    "entity": "order",
+    "id": "order_HpBb98YYzPQw29",
+    "amount": 290453,
+    "currency": "INR",
+    "status": "paid",
+    "receipt": "rcpt_HpBb98YYzPQw29",
+    "created_at": 1769298900,
+    "notes": {
+      "sku": "TONER-200",
+      "gst_rate": "18"
+    },
+    "items": [
+      {
+        "sku": "TONER-200",
+        "amount": 116181,
+        "gst_rate": "18"
+      },
+      {
+        "sku": "TONER-200-ADDON",
+        "amount": 174272,
+        "gst_rate": "18"
+      }
+    ]
+  }
+]

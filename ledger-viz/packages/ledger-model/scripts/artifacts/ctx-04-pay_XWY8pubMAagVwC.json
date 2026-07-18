@@ -1,0 +1,20 @@
+{
+  "event": {
+    "event_id": "pay_XWY8pubMAagVwC",
+    "type": "payment",
+    "amount": 386158,
+    "order_id": "order_SabVgcKXqe0eqv",
+    "sku": "TONER-200",
+    "booked": false
+  },
+  "recovered": {
+    "gst_rate": "5",
+    "_source": {
+      "object": "order_SabVgcKXqe0eqv",
+      "path": "notes.gst_rate"
+    }
+  },
+  "applicable_entry_types": [
+    "dtc_sale"
+  ]
+}

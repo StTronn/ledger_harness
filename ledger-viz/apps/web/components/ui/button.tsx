@@ -1,7 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-type Variant = "default" | "outline" | "ghost" | "secondary";
+type Variant = "default" | "outline" | "ghost" | "secondary" | "brand";
 type Size = "default" | "sm" | "icon";
 
 const variants: Record<Variant, string> = {
@@ -10,6 +10,7 @@ const variants: Record<Variant, string> = {
     "border border-border bg-card hover:bg-accent hover:text-accent-foreground",
   ghost: "hover:bg-accent hover:text-accent-foreground",
   secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+  brand: "bg-brand text-brand-foreground hover:brightness-[0.97]",
 };
 
 const sizes: Record<Size, string> = {

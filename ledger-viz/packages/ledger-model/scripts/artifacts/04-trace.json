@@ -1,0 +1,127 @@
+[
+  {
+    "schema_version": 1,
+    "event_id": "pay_XWY8pubMAagVwC",
+    "mode": "replay",
+    "input": {
+      "event_id": "pay_XWY8pubMAagVwC",
+      "type": "payment",
+      "amount": 386158,
+      "order_id": "order_SabVgcKXqe0eqv",
+      "sku": "TONER-200"
+    },
+    "tools_used": [
+      "orders.fetch"
+    ],
+    "decision": {
+      "entry_type": "dtc_sale",
+      "params": {
+        "gross": 386158,
+        "gst": 18389,
+        "net": 367769,
+        "payment_id": 0
+      }
+    },
+    "rationale": "payment pay_XWY8pubMAagVwC arrived with no gst_rate; fetched order order_SabVgcKXqe0eqv, recovered gst_rate=5%, and booked the dtc_sale at the recovered rate"
+  },
+  {
+    "schema_version": 1,
+    "event_id": "pay_vwFu1TzFyrOz9X",
+    "mode": "replay",
+    "input": {
+      "event_id": "pay_vwFu1TzFyrOz9X",
+      "type": "payment",
+      "amount": 425728,
+      "order_id": "order_QXE8sbdU7IW2dD",
+      "sku": "MASK-5PK"
+    },
+    "tools_used": [
+      "orders.fetch"
+    ],
+    "decision": {
+      "entry_type": "dtc_sale",
+      "params": {
+        "gross": 425728,
+        "gst": 20273,
+        "net": 405455,
+        "payment_id": 0
+      }
+    },
+    "rationale": "payment pay_vwFu1TzFyrOz9X arrived with no gst_rate; fetched order order_QXE8sbdU7IW2dD, recovered gst_rate=5%, and booked the dtc_sale at the recovered rate"
+  },
+  {
+    "schema_version": 1,
+    "event_id": "pay_ijEJkm1sXziPCG",
+    "mode": "replay",
+    "input": {
+      "event_id": "pay_ijEJkm1sXziPCG",
+      "type": "payment",
+      "amount": 259487,
+      "order_id": "order_l4GNfGnck5aVyl",
+      "sku": "SERUM-30"
+    },
+    "tools_used": [
+      "orders.fetch"
+    ],
+    "decision": {
+      "entry_type": "dtc_sale",
+      "params": {
+        "gross": 259487,
+        "gst": 27803,
+        "net": 231684,
+        "payment_id": 0
+      }
+    },
+    "rationale": "payment pay_ijEJkm1sXziPCG arrived with no gst_rate; fetched order order_l4GNfGnck5aVyl, recovered gst_rate=12%, and booked the dtc_sale at the recovered rate"
+  },
+  {
+    "schema_version": 1,
+    "event_id": "pay_yPp7aAHYY0iArF",
+    "mode": "replay",
+    "input": {
+      "event_id": "pay_yPp7aAHYY0iArF",
+      "type": "payment",
+      "amount": 229002,
+      "order_id": "order_qnRax3LFRZr6Uo",
+      "sku": "KIT-DELUXE"
+    },
+    "tools_used": [
+      "orders.fetch"
+    ],
+    "decision": {
+      "entry_type": "dtc_sale",
+      "params": {
+        "gross": 229002,
+        "gst": 34933,
+        "net": 194069,
+        "payment_id": 0
+      }
+    },
+    "rationale": "payment pay_yPp7aAHYY0iArF arrived with no gst_rate; fetched order order_qnRax3LFRZr6Uo, recovered gst_rate=18%, and booked the dtc_sale at the recovered rate"
+  },
+  {
+    "schema_version": 1,
+    "event_id": "pay_PJ7jI4UOcATzNJ",
+    "mode": "replay",
+    "input": {
+      "event_id": "pay_PJ7jI4UOcATzNJ",
+      "type": "payment",
+      "amount": 265878,
+      "order_id": "order_rIgTUn1QiqIWEB",
+      "sku": "SERUM-30"
+    },
+    "tools_used": [
+      "orders.fetch"
+    ],
+    "decision": {
+      "entry_type": "dtc_sale",
+      "params": {
+        "gross": 265878,
+        "gst": 40558,
+        "net": 225320,
+        "payment_id": 0
+      }
+    },
+    "rationale": "payment pay_PJ7jI4UOcATzNJ arrived with no gst_rate; fetched order order_rIgTUn1QiqIWEB, recovered gst_rate=18%, and booked the dtc_sale at the recovered rate"
+  }
+]

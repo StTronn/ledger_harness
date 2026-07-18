@@ -21,62 +21,96 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --color-ring: var(--ring);
 
+  /* Single restrained brand signal (Fragment-green) — used only for the
+     "live" playhead / current state, focus, and the brand mark. */
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-soft: var(--brand-soft);
+
+  /* Muted amber — reserved for "escalated": honest hand-off, not failure. */
+  --color-amber: var(--amber);
+  --color-amber-soft: var(--amber-soft);
+
+  /* Sign-aware figure colors: debits read in ink, credits read muted. */
+  --color-debit: var(--debit);
+  --color-credit: var(--credit);
+
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
 
-  /* Lyra: zero radius — every rounded-* utility resolves sharp. */
-  --radius-lg: var(--radius);
-  --radius-md: var(--radius);
+  /* Boxy & tight — zero corner radius throughout; every rounded-* resolves sharp. */
   --radius-sm: var(--radius);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius);
   --radius-xl: var(--radius);
 }
 
 /*
- * Austere fintech neutral scale (Fragment-inspired). Near-black text on clean
- * white; soft light-gray on charcoal. Restrained — no vibrant accents. Hue is
- * held at a single faint cool angle (264) at very low chroma so every grey
- * reads as the same family in both themes.
+ * Fragment-inspired ledger system. Clean, near-white surfaces; ink-black text;
+ * hairline cool-grey rules; a single chartreuse-green accent reserved for the
+ * live playhead. Numerics are tabular monospace; everything else is a refined
+ * sans. Hue is held near a faint cool angle (255) at very low chroma so greys
+ * stay one calm family across both themes.
  */
 :root {
-  /* Lyra style: boxy & sharp — zero corner radius throughout. */
   --radius: 0rem;
 
-  --background: oklch(0.995 0 0);
-  --foreground: oklch(0.205 0.004 264);
+  --background: oklch(0.987 0.0015 250);
+  --foreground: oklch(0.215 0.006 262);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.205 0.004 264);
-  --muted: oklch(0.972 0.001 264);
-  --muted-foreground: oklch(0.555 0.008 264);
-  --border: oklch(0.917 0.003 264);
-  --primary: oklch(0.205 0.004 264);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.968 0.001 264);
-  --secondary-foreground: oklch(0.245 0.004 264);
-  --accent: oklch(0.966 0.001 264);
-  --accent-foreground: oklch(0.205 0.004 264);
-  --destructive: oklch(0.55 0.13 25);
-  --destructive-foreground: oklch(0.985 0 0);
-  --ring: oklch(0.205 0.004 264);
+  --card-foreground: oklch(0.215 0.006 262);
+  --muted: oklch(0.971 0.0015 250);
+  --muted-foreground: oklch(0.535 0.009 258);
+  --border: oklch(0.925 0.0025 255);
+  --primary: oklch(0.235 0.007 262);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.966 0.0015 250);
+  --secondary-foreground: oklch(0.27 0.006 262);
+  --accent: oklch(0.964 0.0015 250);
+  --accent-foreground: oklch(0.235 0.007 262);
+  --destructive: oklch(0.55 0.16 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --ring: oklch(0.78 0.17 138);
+
+  /* Fragment chartreuse — deep enough to sit on white as a hairline/marker. */
+  --brand: oklch(0.74 0.165 140);
+  --brand-foreground: oklch(0.22 0.04 145);
+  --brand-soft: oklch(0.74 0.165 140 / 0.1);
+
+  --amber: oklch(0.66 0.115 72);
+  --amber-soft: oklch(0.66 0.115 72 / 0.1);
+
+  --debit: oklch(0.235 0.007 262);
+  --credit: oklch(0.56 0.07 268);
 }
 
 .dark {
-  --background: oklch(0.165 0.004 264);
-  --foreground: oklch(0.915 0.003 264);
-  --card: oklch(0.196 0.004 264);
-  --card-foreground: oklch(0.915 0.003 264);
-  --muted: oklch(0.246 0.005 264);
-  --muted-foreground: oklch(0.66 0.008 264);
-  /* Lyra: crisper, more precise box borders. */
-  --border: oklch(1 0 0 / 13%);
-  --primary: oklch(0.93 0.003 264);
-  --primary-foreground: oklch(0.196 0.004 264);
-  --secondary: oklch(0.255 0.005 264);
-  --secondary-foreground: oklch(0.915 0.003 264);
-  --accent: oklch(0.262 0.005 264);
-  --accent-foreground: oklch(0.95 0.002 264);
-  --destructive: oklch(0.62 0.15 25);
-  --destructive-foreground: oklch(0.985 0 0);
-  --ring: oklch(0.7 0.01 264);
+  --background: oklch(0.165 0.005 262);
+  --foreground: oklch(0.92 0.003 255);
+  --card: oklch(0.198 0.005 262);
+  --card-foreground: oklch(0.92 0.003 255);
+  --muted: oklch(0.245 0.006 262);
+  --muted-foreground: oklch(0.66 0.008 258);
+  --border: oklch(1 0 0 / 11%);
+  --primary: oklch(0.93 0.003 255);
+  --primary-foreground: oklch(0.2 0.005 262);
+  --secondary: oklch(0.255 0.006 262);
+  --secondary-foreground: oklch(0.92 0.003 255);
+  --accent: oklch(0.262 0.006 262);
+  --accent-foreground: oklch(0.95 0.002 255);
+  --destructive: oklch(0.64 0.17 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --ring: oklch(0.82 0.17 140);
+
+  --brand: oklch(0.84 0.18 138);
+  --brand-foreground: oklch(0.2 0.04 145);
+  --brand-soft: oklch(0.84 0.18 138 / 0.14);
+
+  --amber: oklch(0.78 0.12 75);
+  --amber-soft: oklch(0.78 0.12 75 / 0.16);
+
+  --debit: oklch(0.93 0.003 255);
+  --credit: oklch(0.66 0.05 262);
 }
 
 * {
@@ -93,14 +127,45 @@ html.dark {
 body {
   background-color: var(--background);
   color: var(--foreground);
-  /* Lyra is mono-forward: the monospace face leads the whole interface. */
+  /* Tight & mono-forward: the monospace face leads the whole interface. */
   font-family: var(--font-mono), ui-monospace, "SF Mono", Menlo, monospace;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  letter-spacing: -0.01em;
 }
 
 /* Tabular, lining figures everywhere we use the mono face for amounts. */
 .font-mono {
   font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum", "zero";
+  font-feature-settings: "tnum", "zero", "ss01";
+  letter-spacing: -0.01em;
+}
+
+/* Agent-activity pulse — the chartreuse marker breathing while it "thinks". */
+@keyframes agent-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+.animate-agent-pulse {
+  animation: agent-pulse 1.05s ease-in-out infinite;
+}
+
+/* A row landing: a brief left-edge wash when an entry posts. */
+@keyframes post-land {
+  0% {
+    background-color: var(--brand-soft);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+.animate-post-land {
+  animation: post-land 0.9s ease-out;
 }

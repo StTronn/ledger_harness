@@ -22,44 +22,58 @@ export function StepRow({ step, columns, deltas, meta, state }: StepRowProps) {
   const current = state === "current";
   const future = state === "future";
   const tag = step.entryType ?? step.kind;
+  const zebra = step.index % 2 === 1;
 
   return (
     <div
       className={cn(
-        "flex transition-opacity",
-        current && "bg-primary/[0.07]",
-        future && "opacity-35",
+        "flex border-b border-border/40 transition-opacity",
+        current
+          ? "bg-brand-soft"
+          : zebra
+            ? "bg-muted/40"
+            : "bg-card",
+        future && "opacity-40",
       )}
     >
       <div
         className={cn(
-          "sticky left-0 z-10 flex shrink-0 items-center gap-2.5 py-2 pr-4",
+          "sticky left-0 z-10 flex shrink-0 items-center gap-2.5 py-2.5 pr-4",
           current
-            ? "border-l-2 border-primary bg-primary/[0.07] pl-[14px]"
-            : "bg-card pl-4",
+            ? "border-l-2 border-brand bg-brand-soft pl-[14px]"
+            : cn(zebra ? "bg-muted/40" : "bg-card", "pl-4"),
         )}
         style={{ width: GUTTER_W }}
       >
         <span
           className={cn(
             "w-5 shrink-0 text-right font-mono text-[11px] tabular-nums",
-            current ? "text-foreground/70" : "text-muted-foreground/45",
+            current ? "text-foreground/75" : "text-muted-foreground/45",
           )}
         >
           {step.index + 1}
         </span>
         <span
           className={cn(
-            "flex-1 truncate font-mono text-[12px]",
-            current ? "font-medium text-foreground" : "text-foreground/75",
+            "flex-1 truncate text-[12.5px] tracking-tight",
+            current ? "font-medium text-foreground" : "text-foreground/80",
           )}
           title={step.label}
         >
           {step.label}
         </span>
         {tag && (
-          <span className="shrink-0 font-mono text-[10px] tracking-tight text-muted-foreground/55">
-            {tag}
+          <span
+            className={cn(
+              "shrink-0 rounded-sm border px-1.5 py-px font-mono text-[9.5px] uppercase tracking-wide",
+              // Legacy agent-tagged rows retain the brand treatment when present;
+              // current review-only agent records are excluded from the ledger film.
+              step.kind === "agent"
+                ? "border-brand/40 bg-brand-soft text-brand-foreground dark:text-brand"
+                : "border-border/70 bg-card text-muted-foreground/65",
+            )}
+          >
+            {step.kind === "agent" ? `${tag} · agent` : tag}
           </span>
         )}
       </div>

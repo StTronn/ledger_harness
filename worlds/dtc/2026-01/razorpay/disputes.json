@@ -1,0 +1,30 @@
+[
+  {
+    "entity": "dispute",
+    "id": "disp_0W0XbNCPLjc6UJ",
+    "amount": 106081,
+    "currency": "INR",
+    "payment_id": "pay_J3oB1IXvf8pnzG",
+    "status": "lost",
+    "reason": "chargeback_fraud",
+    "created_at": 1768867200,
+    "notes": {
+      "sku": "TONER-200",
+      "gst_rate": "18"
+    }
+  },
+  {
+    "entity": "dispute",
+    "id": "disp_qQAWi0CwfENBvX",
+    "amount": 262483,
+    "currency": "INR",
+    "payment_id": "pay_w04HCrIXSRpq1e",
+    "status": "lost",
+    "reason": "chargeback_fraud",
+    "created_at": 1768867200,
+    "notes": {
+      "sku": "CREAM-50",
+      "gst_rate": "5"
+    }
+  }
+]

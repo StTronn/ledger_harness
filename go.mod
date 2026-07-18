@@ -1,4 +1,4 @@
-module github.com/razorpay/close-agent
+module github.com/razorpay/ledger-flow
 
 go 1.25.4
 

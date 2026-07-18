@@ -1,12 +1,24 @@
 # Run artifacts (scores, reports, error records, traces) are generated output.
 /runs/
 
-# Go build artifacts and binaries.
-/close-agent
+# Go build artifacts, binaries, and local cache.
+/ledger-flow
 /bin/
+/.tmp-go-cache/
 *.exe
 *.test
 *.out
+
+# Node.js dependencies and generated web build output.
+**/node_modules/
+**/.next/
+**/dist/
+**/coverage/
+**/.turbo/
+*.tsbuildinfo
+
+# Locally built agent executable.
+/agent/bin/
 
 # Editor / OS cruft.
 .DS_Store

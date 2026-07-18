@@ -1,0 +1,459 @@
+{
+  "meta": {
+    "world": "dtc",
+    "symbol": "₹",
+    "minorPerMajor": 100,
+    "period": "2026-01",
+    "title": "Partial refunds (judgment)"
+  },
+  "baseline": {
+    "booked": 45,
+    "skipped": 3,
+    "breaks": 1,
+    "truth": 48,
+    "scorePct": 93
+  },
+  "final": {
+    "booked": 45,
+    "skipped": 3,
+    "breaks": 1,
+    "truth": 48,
+    "scorePct": 93
+  },
+  "consultations": [
+    {
+      "id": "rfnd_ZtHFpyTP2I9NSz",
+      "role": "classify",
+      "resolves": "skip",
+      "eventId": "rfnd_ZtHFpyTP2I9NSz",
+      "eventType": "refund",
+      "amount": 28128,
+      "sku": "MASK-5PK",
+      "orderId": "order_jTYHxOWgY2SlPF",
+      "whyMissed": "A PARTIAL refund — smaller than its payment. The amount alone cannot say WHY: one line item returned (refund_reversal), a goodwill credit note (price_adjustment), or something else. Booking it blind would be wrong-but-balanced: clean books, silently misstated revenue.",
+      "toolsUsed": [
+        "orders.fetch"
+      ],
+      "rationale": "partial refund rfnd_ZtHFpyTP2I9NSz of 281.28 equals line item order_jTYHxOWgY2SlPF/items.0 (MASK-5PK) — recommended refund_reversal at 18% for human review",
+      "status": "recommended",
+      "citation": {
+        "field": "gst_rate",
+        "value": "18",
+        "object": "order_jTYHxOWgY2SlPF",
+        "path": "items.0",
+        "tool": "orders.fetch"
+      },
+      "entryType": "refund_reversal",
+      "params": {
+        "net": 23837,
+        "gst": 4291
+      },
+      "postings": [
+        {
+          "side": "Dr",
+          "account": "income/sales-returns",
+          "amount": 23837
+        },
+        {
+          "side": "Dr",
+          "account": "liabilities/gst-output-payable",
+          "amount": 4291
+        },
+        {
+          "side": "Cr",
+          "account": "assets/razorpay-settlement-receivable",
+          "amount": 28128
+        }
+      ],
+      "postedId": "refund:rfnd_ZtHFpyTP2I9NSz"
+    },
+    {
+      "id": "rfnd_YODsk1r0xPB47u",
+      "role": "classify",
+      "resolves": "skip",
+      "eventId": "rfnd_YODsk1r0xPB47u",
+      "eventType": "refund",
+      "amount": 135299,
+      "sku": "MASK-5PK",
+      "orderId": "order_eaMwq2HKxcje2u",
+      "whyMissed": "A PARTIAL refund — smaller than its payment. The amount alone cannot say WHY: one line item returned (refund_reversal), a goodwill credit note (price_adjustment), or something else. Booking it blind would be wrong-but-balanced: clean books, silently misstated revenue.",
+      "toolsUsed": [
+        "orders.fetch"
+      ],
+      "rationale": "partial refund rfnd_YODsk1r0xPB47u is annotated \"goodwill\" — a goodwill/manual credit is a human policy call, not an agent booking",
+      "status": "escalated",
+      "postings": []
+    },
+    {
+      "id": "rfnd_jWwN1ErzEObBK2",
+      "role": "classify",
+      "resolves": "skip",
+      "eventId": "rfnd_jWwN1ErzEObBK2",
+      "eventType": "refund",
+      "amount": 35574,
+      "sku": "KIT-DELUXE",
+      "orderId": "order_KPX5Tr5yQOKBXZ",
+      "whyMissed": "A PARTIAL refund — smaller than its payment. The amount alone cannot say WHY: one line item returned (refund_reversal), a goodwill credit note (price_adjustment), or something else. Booking it blind would be wrong-but-balanced: clean books, silently misstated revenue.",
+      "toolsUsed": [
+        "orders.fetch"
+      ],
+      "rationale": "partial refund rfnd_jWwN1ErzEObBK2 of 355.74 matches no line item or pair of order order_KPX5Tr5yQOKBXZ — unexplained partial credit needs a human",
+      "status": "escalated",
+      "postings": []
+    },
+    {
+      "id": "check3:receivable-residual:investigate",
+      "role": "investigate",
+      "status": "escalated",
+      "resolves": "break",
+      "eventId": "check3:receivable-residual:",
+      "eventType": "break",
+      "amount": 170873,
+      "whyMissed": "The receivable did not clear: the residual traces to the two partial refunds classify escalated. No posting may guess their intent, so the investigation escalates too — two independent nets, one honest answer.",
+      "toolsUsed": [
+        "orders.fetch"
+      ],
+      "rationale": "residual traces to 2 PARTIAL refund(s) whose intent (return vs goodwill credit) is unrecoverable from the snapshot — escalating to a human, never guessing",
+      "break": {
+        "key": "check3:receivable-residual:",
+        "check": 3,
+        "kind": "receivable-residual",
+        "expected": 0,
+        "actual": 170873,
+        "detail": "settlement-receivable residual 1708.73 at period end exceeds in-transit allowance 0.00 (balance 1708.73)",
+        "account": "assets/razorpay-settlement-receivable",
+        "candidates": [
+          "setl_rD7bZInPVl8xSJ",
+          "setl_Vs3QsVmSWsRTUj",
+          "setl_yDFVNgz8cBpz0H",
+          "setl_lxRm4NYMQsuldj",
+          "setl_0uA1PjE0UbCUjH",
+          "setl_OKd3fdnZZGslUH"
+        ],
+        "batch": [
+          {
+            "eventId": "pay_25Zx1xG57xpaIw",
+            "type": "payment",
+            "amount": 70321,
+            "booked": true,
+            "gstRate": "18",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_YQzObSt5bKJKbZ",
+            "type": "payment",
+            "amount": 126113,
+            "booked": true,
+            "gstRate": "18",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_ToD8Q27C31rntv",
+            "type": "payment",
+            "amount": 497187,
+            "booked": true,
+            "gstRate": "18",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_vVndIvyuvaoA1I",
+            "type": "payment",
+            "amount": 101248,
+            "booked": true,
+            "gstRate": "12",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_BP31OMVH2cBazY",
+            "type": "payment",
+            "amount": 391415,
+            "booked": true,
+            "gstRate": "5",
+            "highlight": false
+          },
+          {
+            "eventId": "rfnd_ZtHFpyTP2I9NSz",
+            "type": "refund",
+            "amount": 28128,
+            "booked": true,
+            "gstRate": "18",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_evA57MZgo2Dscl",
+            "type": "payment",
+            "amount": 450996,
+            "booked": true,
+            "gstRate": "18",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_WI7PGJcMDKrZmc",
+            "type": "payment",
+            "amount": 296310,
+            "booked": true,
+            "gstRate": "5",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_2gLpg7sGIOrFKs",
+            "type": "payment",
+            "amount": 412591,
+            "booked": true,
+            "gstRate": "18",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_Lc8Rmm7NGk3rSa",
+            "type": "payment",
+            "amount": 398590,
+            "booked": true,
+            "gstRate": "18",
+            "highlight": false
+          },
+          {
+            "eventId": "rfnd_YODsk1r0xPB47u",
+            "type": "refund",
+            "amount": 135299,
+            "booked": false,
+            "gstRate": "18",
+            "highlight": true
+          },
+          {
+            "eventId": "pay_z3uXnDCDKW9Zeg",
+            "type": "payment",
+            "amount": 492641,
+            "booked": true,
+            "gstRate": "12",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_sY1bOVDwUf5IZk",
+            "type": "payment",
+            "amount": 142286,
+            "booked": true,
+            "gstRate": "12",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_yGvTfsKb91CUAX",
+            "type": "payment",
+            "amount": 235767,
+            "booked": true,
+            "gstRate": "18",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_DAOlIdEnQU44aS",
+            "type": "payment",
+            "amount": 439586,
+            "booked": true,
+            "gstRate": "5",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_Bfj3KHpO0shCcG",
+            "type": "payment",
+            "amount": 220685,
+            "booked": true,
+            "gstRate": "5",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_V4JslYbbMkxyP0",
+            "type": "payment",
+            "amount": 75134,
+            "booked": true,
+            "gstRate": "5",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_DTYiVGempnuPlk",
+            "type": "payment",
+            "amount": 118611,
+            "booked": true,
+            "gstRate": "18",
+            "highlight": false
+          },
+          {
+            "eventId": "rfnd_jWwN1ErzEObBK2",
+            "type": "refund",
+            "amount": 35574,
+            "booked": false,
+            "gstRate": "12",
+            "highlight": true
+          },
+          {
+            "eventId": "rfnd_MewSEyxPCORmOz",
+            "type": "refund",
+            "amount": 235767,
+            "booked": true,
+            "gstRate": "18",
+            "highlight": false
+          },
+          {
+            "eventId": "rfnd_kscFfvA0PPiNE2",
+            "type": "refund",
+            "amount": 75134,
+            "booked": true,
+            "gstRate": "5",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_J3oB1IXvf8pnzG",
+            "type": "payment",
+            "amount": 106081,
+            "booked": true,
+            "gstRate": "18",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_fqTkojMri1kiyo",
+            "type": "payment",
+            "amount": 128140,
+            "booked": true,
+            "gstRate": "18",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_reKCMseeHMUL7Z",
+            "type": "payment",
+            "amount": 322654,
+            "booked": true,
+            "gstRate": "18",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_pbULzR68SxwhDL",
+            "type": "payment",
+            "amount": 218911,
+            "booked": true,
+            "gstRate": "18",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_FGrPGB51LWzdx2",
+            "type": "payment",
+            "amount": 407912,
+            "booked": true,
+            "gstRate": "18",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_w04HCrIXSRpq1e",
+            "type": "payment",
+            "amount": 262483,
+            "booked": true,
+            "gstRate": "5",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_skg36gGqqZVbyO",
+            "type": "payment",
+            "amount": 392969,
+            "booked": true,
+            "gstRate": "5",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_MG3EjH7Bsihrqv",
+            "type": "payment",
+            "amount": 222635,
+            "booked": true,
+            "gstRate": "18",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_VRXrpoN7R9K6ju",
+            "type": "payment",
+            "amount": 55127,
+            "booked": true,
+            "gstRate": "12",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_CZHXxwbxgZC78r",
+            "type": "payment",
+            "amount": 206496,
+            "booked": true,
+            "gstRate": "12",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_oEGLNYMkETdqu8",
+            "type": "payment",
+            "amount": 419913,
+            "booked": true,
+            "gstRate": "18",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_vj2xLSsQldldLe",
+            "type": "payment",
+            "amount": 378804,
+            "booked": true,
+            "gstRate": "5",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_c1KUm1mcOmI3gX",
+            "type": "payment",
+            "amount": 441119,
+            "booked": true,
+            "gstRate": "18",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_vKmR6SFBybiYiZ",
+            "type": "payment",
+            "amount": 250376,
+            "booked": true,
+            "gstRate": "12",
+            "highlight": false
+          },
+          {
+            "eventId": "rfnd_WmLLQGJgOfvutw",
+            "type": "refund",
+            "amount": 55127,
+            "booked": true,
+            "gstRate": "12",
+            "highlight": false
+          },
+          {
+            "eventId": "rfnd_Li0P5y7CEWu0o2",
+            "type": "refund",
+            "amount": 250376,
+            "booked": true,
+            "gstRate": "12",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_TVeiKcI4LOHcOg",
+            "type": "payment",
+            "amount": 473331,
+            "booked": true,
+            "gstRate": "12",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_7LO15rVsDKUiXO",
+            "type": "payment",
+            "amount": 455168,
+            "booked": true,
+            "gstRate": "18",
+            "highlight": false
+          },
+          {
+            "eventId": "pay_T6BZPB4G3XJmK1",
+            "type": "payment",
+            "amount": 290453,
+            "booked": true,
+            "gstRate": "18",
+            "highlight": false
+          }
+        ]
+      },
+      "postings": []
+    }
+  ]
+}

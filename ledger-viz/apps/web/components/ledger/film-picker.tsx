@@ -26,7 +26,7 @@ export function FilmPicker({ films, value, onChange }: FilmPickerProps) {
       <div
         role="tablist"
         aria-label="Sample ledger"
-        className="inline-flex items-center gap-0.5 border border-border bg-muted/40 p-0.5"
+        className="inline-flex items-center gap-0.5 rounded-none border border-border bg-muted/50 p-0.5"
       >
         {films.map((f) => {
           const active = f.id === value;
@@ -41,7 +41,7 @@ export function FilmPicker({ films, value, onChange }: FilmPickerProps) {
                 "rounded-none px-3 py-1.5 text-[13px] font-medium outline-none transition-colors",
                 "focus-visible:ring-2 focus-visible:ring-ring/60",
                 active
-                  ? "bg-card text-foreground"
+                  ? "bg-card text-foreground ring-1 ring-border"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >

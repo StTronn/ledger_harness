@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "world": "dtc",
+  "period": "2026-04",
+  "score_pct": 87,
+  "trial_balance_matches": false,
+  "totals": {
+    "truth_entries": 41,
+    "correct": 36,
+    "wrong": 0,
+    "missing": 5,
+    "extra": 0
+  },
+  "per_account_deltas": [
+    {
+      "account": "assets/bank",
+      "got_balance": 6342934,
+      "want_balance": 6342934,
+      "delta": 0
+    },
+    {
+      "account": "assets/razorpay-settlement-receivable",
+      "got_balance": -1566253,
+      "want_balance": 0,
+      "delta": -1566253
+    },
+    {
+      "account": "expense/chargeback-loss",
+      "got_balance": 882368,
+      "want_balance": 882368,
+      "delta": 0
+    },
+    {
+      "account": "expense/gst-input",
+      "got_balance": 31348,
+      "want_balance": 31348,
+      "delta": 0
+    },
+    {
+      "account": "expense/processor-fees",
+      "got_balance": 174223,
+      "want_balance": 174223,
+      "delta": 0
+    },
+    {
+      "account": "income/product-sales",
+      "got_balance": 6375894,
+      "want_balance": 7800191,
+      "delta": -1424297
+    },
+    {
+      "account": "income/sales-returns",
+      "got_balance": -972246,
+      "want_balance": -972246,
+      "delta": 0
+    },
+    {
+      "account": "liabilities/gst-output-payable",
+      "got_balance": 460972,
+      "want_balance": 602928,
+      "delta": -141956
+    }
+  ],
+  "errors": [
+    {
+      "event_id": "pay_PJ7jI4UOcATzNJ",
+      "error_class": "missing",
+      "want": "dtc_sale: Cr income/product-sales 2253.20, Cr liabilities/gst-output-payable 405.58, Dr assets/razorpay-settlement-receivable 2658.78"
+    },
+    {
+      "event_id": "pay_XWY8pubMAagVwC",
+      "error_class": "missing",
+      "want": "dtc_sale: Cr income/product-sales 3677.69, Cr liabilities/gst-output-payable 183.89, Dr assets/razorpay-settlement-receivable 3861.58"
+    },
+    {
+      "event_id": "pay_ijEJkm1sXziPCG",
+      "error_class": "missing",
+      "want": "dtc_sale: Cr income/product-sales 2316.84, Cr liabilities/gst-output-payable 278.03, Dr assets/razorpay-settlement-receivable 2594.87"
+    },
+    {
+      "event_id": "pay_vwFu1TzFyrOz9X",
+      "error_class": "missing",
+      "want": "dtc_sale: Cr income/product-sales 4054.55, Cr liabilities/gst-output-payable 202.73, Dr assets/razorpay-settlement-receivable 4257.28"
+    },
+    {
+      "event_id": "pay_yPp7aAHYY0iArF",
+      "error_class": "missing",
+      "want": "dtc_sale: Cr income/product-sales 1940.69, Cr liabilities/gst-output-payable 349.33, Dr assets/razorpay-settlement-receivable 2290.02"
+    }
+  ]
+}

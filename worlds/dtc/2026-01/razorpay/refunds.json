@@ -1,0 +1,94 @@
+[
+  {
+    "entity": "refund",
+    "id": "rfnd_ZtHFpyTP2I9NSz",
+    "amount": 28128,
+    "currency": "INR",
+    "payment_id": "pay_25Zx1xG57xpaIw",
+    "status": "processed",
+    "created_at": 1767571200,
+    "notes": {
+      "sku": "MASK-5PK",
+      "gst_rate": "18"
+    }
+  },
+  {
+    "entity": "refund",
+    "id": "rfnd_YODsk1r0xPB47u",
+    "amount": 135299,
+    "currency": "INR",
+    "payment_id": "pay_evA57MZgo2Dscl",
+    "status": "processed",
+    "created_at": 1767916800,
+    "notes": {
+      "sku": "MASK-5PK",
+      "gst_rate": "18",
+      "reason": "goodwill"
+    }
+  },
+  {
+    "entity": "refund",
+    "id": "rfnd_jWwN1ErzEObBK2",
+    "amount": 35574,
+    "currency": "INR",
+    "payment_id": "pay_sY1bOVDwUf5IZk",
+    "status": "processed",
+    "created_at": 1768262400,
+    "notes": {
+      "sku": "KIT-DELUXE",
+      "gst_rate": "12"
+    }
+  },
+  {
+    "entity": "refund",
+    "id": "rfnd_MewSEyxPCORmOz",
+    "amount": 235767,
+    "currency": "INR",
+    "payment_id": "pay_yGvTfsKb91CUAX",
+    "status": "processed",
+    "created_at": 1768262400,
+    "notes": {
+      "sku": "TONER-200",
+      "gst_rate": "18"
+    }
+  },
+  {
+    "entity": "refund",
+    "id": "rfnd_kscFfvA0PPiNE2",
+    "amount": 75134,
+    "currency": "INR",
+    "payment_id": "pay_V4JslYbbMkxyP0",
+    "status": "processed",
+    "created_at": 1768262400,
+    "notes": {
+      "sku": "KIT-DELUXE",
+      "gst_rate": "5"
+    }
+  },
+  {
+    "entity": "refund",
+    "id": "rfnd_WmLLQGJgOfvutw",
+    "amount": 55127,
+    "currency": "INR",
+    "payment_id": "pay_VRXrpoN7R9K6ju",
+    "status": "processed",
+    "created_at": 1769126400,
+    "notes": {
+      "sku": "TONER-200",
+      "gst_rate": "12"
+    }
+  },
+  {
+    "entity": "refund",
+    "id": "rfnd_Li0P5y7CEWu0o2",
+    "amount": 250376,
+    "currency": "INR",
+    "payment_id": "pay_vKmR6SFBybiYiZ",
+    "status": "processed",
+    "created_at": 1769126400,
+    "notes": {
+      "sku": "KIT-DELUXE",
+      "gst_rate": "12"
+    }
+  }
+]

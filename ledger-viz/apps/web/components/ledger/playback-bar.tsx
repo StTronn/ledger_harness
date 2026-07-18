@@ -44,6 +44,7 @@ export function PlaybackBar({
           <SkipBack />
         </Button>
         <Button
+          variant="brand"
           size="icon"
           onClick={onTogglePlay}
           disabled={atEnd && !playing}
@@ -72,16 +73,23 @@ export function PlaybackBar({
           />
         </div>
 
-        <div className="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground">
-          <span className="text-foreground">
+        <div className="shrink-0 font-mono text-[12px] tabular-nums text-muted-foreground">
+          <span className="font-medium text-foreground">
             {String(playhead).padStart(2, "0")}
-          </span>{" "}
-          / {String(length).padStart(2, "0")}
+          </span>
+          <span className="px-0.5 text-muted-foreground/50">/</span>
+          {String(length).padStart(2, "0")}
         </div>
       </div>
 
-      <div className="min-h-4 truncate font-mono text-[11px] text-muted-foreground">
-        {playhead === 0 ? "Opening balances" : (label ?? "")}
+      <div className="flex min-h-4 items-center gap-2 truncate text-[12.5px] text-muted-foreground">
+        <span
+          aria-hidden
+          className="size-1.5 shrink-0 rounded-full bg-brand"
+        />
+        <span className="truncate">
+          {playhead === 0 ? "Opening balances" : (label ?? "")}
+        </span>
       </div>
     </div>
   );

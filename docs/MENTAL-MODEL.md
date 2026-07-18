@@ -1,9 +1,10 @@
-# ledger-flow: Mental Model
+# Harness Over Ledger
 
 ## What It Does
 
 `ledger-flow` turns a period of Razorpay activity into balanced journal entries
-in a double-entry ledger.
+in a double-entry ledger. The harness sits over that ledger: it prepares
+traceable evidence for recovery and, only when needed, for judgment and review.
 
 Routine accounting stays deterministic. The judgment agent is used only when the
 system cannot safely decide what an event means.
@@ -68,11 +69,12 @@ internal/ledgerflow/run
         ├─ internal/ledgerflow/posting
         ├─ internal/ledgerflow/recovery
         │    └─ internal/ledgerflow/context
-        ├─ internal/ledgerflow/judgment
         ├─ internal/ledger
         └─ internal/reconcile
-                ↓
-        internal/score
+        ↓
+internal/score
+
+internal/agentclient  ↔  agent/src
 ```
 
 The main folders have focused responsibilities:
@@ -88,9 +90,11 @@ The main folders have focused responsibilities:
 - `internal/score`: compares the result with the expected ledger
 - `internal/agentclient`: connects the Go flow to the judgment agent
 
-The TypeScript agent lives under `agent/src`. It receives prepared context over
-the agent client boundary. It can use read-only exploration tools for cases the
-prepared context does not fully explain.
+The TypeScript judgment agent lives under `agent/src`. It receives prepared,
+read-only context over the agent client boundary. The harness exposes that same
+context to a human reviewer: event details, recovered facts and citations,
+booked status, reconciliation breaks, and balances. For a novel case, the agent
+can use deeper read-only entity lookups without changing the books.
 
 ## Normal Event
 
@@ -145,7 +149,8 @@ partial refund
 ```
 
 Even an exact item match can remain review-required when policy says partial
-refunds need human judgment.
+refunds need human judgment. The agent can recommend a treatment or escalate
+the ambiguity, but it does not post the recommendation.
 
 ## RTO Example
 
@@ -157,14 +162,15 @@ COD remittance
   → recovery checks the deduction, shipment status, and rate card
 ```
 
-If the deduction is a contracted RTO charge, its amount matches the rate card,
-and the shipment is confirmed as RTO:
+The recovery engine follows the deduction to the shipment and rate card. It can
+show when an RTO fee is supported and cite the source for the amount. In the
+current flow, the deduction remains review-only:
 
 ```text
-safe deterministic candidate
-  → posting engine applies the RTO fee template
-  → ledger posts the entry
-  → reconciliation runs again
+supported RTO fee
+  → recovery prepares the rate-card and shipment evidence
+  → judgment agent records a recommendation
+  → ledger remains unchanged until explicit approval
 ```
 
 If the deduction is an unsupported weight adjustment or the shipment status is
@@ -179,17 +185,18 @@ no safe candidate
 
 ## Reconciliation Breaks
 
-Reconciliation breaks use the same ownership model as event misses:
+Reconciliation breaks use the same evidence model as event misses:
 
 ```text
 reconciliation break
   → recovery gathers and validates the related facts
-  ├─ safe candidate → posting engine → ledger → reconcile again
-  └─ no safe candidate → judgment agent → review or escalation
+  → judgment agent → review or escalation
 ```
 
 The agent can help explain a break, but an agent recommendation does not change
-the ledger automatically.
+the ledger automatically. A future deterministic recovery policy may return a
+safe candidate to the posting engine; that does not exist for reconciliation
+breaks in the current runtime path.
 
 ## Simple Principle
 
@@ -197,7 +204,8 @@ the ledger automatically.
 Posting engine handles known accounting.
 Recovery engine finds and validates evidence.
 Posting engine applies safe recovery candidates.
-Judgment agent handles uncertainty.
+Harness gives the judgment agent and reviewer the same traceable context.
+Judgment agent handles uncertainty without posting.
 Ledger validates every entry.
 Reconciliation checks whether the books agree with reality.
 ```

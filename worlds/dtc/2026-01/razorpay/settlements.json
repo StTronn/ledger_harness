@@ -1,0 +1,130 @@
+[
+  {
+    "entity": "settlement",
+    "id": "setl_rD7bZInPVl8xSJ",
+    "amount": 1130165,
+    "currency": "INR",
+    "status": "processed",
+    "fee": 23723,
+    "tax": 4268,
+    "utr": "UTRrD7bZInPVl8xSJ",
+    "created_at": 1767571200,
+    "payment_ids": [
+      "pay_25Zx1xG57xpaIw",
+      "pay_YQzObSt5bKJKbZ",
+      "pay_ToD8Q27C31rntv",
+      "pay_vVndIvyuvaoA1I",
+      "pay_BP31OMVH2cBazY"
+    ],
+    "refund_ids": [
+      "rfnd_ZtHFpyTP2I9NSz"
+    ]
+  },
+  {
+    "entity": "settlement",
+    "id": "setl_Vs3QsVmSWsRTUj",
+    "amount": 1386413,
+    "currency": "INR",
+    "status": "processed",
+    "fee": 31167,
+    "tax": 5608,
+    "utr": "UTRVs3QsVmSWsRTUj",
+    "created_at": 1767916800,
+    "payment_ids": [
+      "pay_evA57MZgo2Dscl",
+      "pay_WI7PGJcMDKrZmc",
+      "pay_2gLpg7sGIOrFKs",
+      "pay_Lc8Rmm7NGk3rSa"
+    ],
+    "refund_ids": [
+      "rfnd_YODsk1r0xPB47u"
+    ]
+  },
+  {
+    "entity": "settlement",
+    "id": "setl_yDFVNgz8cBpz0H",
+    "amount": 1337540,
+    "currency": "INR",
+    "status": "processed",
+    "fee": 34490,
+    "tax": 6205,
+    "utr": "UTRyDFVNgz8cBpz0H",
+    "created_at": 1768262400,
+    "payment_ids": [
+      "pay_z3uXnDCDKW9Zeg",
+      "pay_sY1bOVDwUf5IZk",
+      "pay_yGvTfsKb91CUAX",
+      "pay_DAOlIdEnQU44aS",
+      "pay_Bfj3KHpO0shCcG",
+      "pay_V4JslYbbMkxyP0",
+      "pay_DTYiVGempnuPlk"
+    ],
+    "refund_ids": [
+      "rfnd_jWwN1ErzEObBK2",
+      "rfnd_MewSEyxPCORmOz",
+      "rfnd_kscFfvA0PPiNE2"
+    ]
+  },
+  {
+    "entity": "settlement",
+    "id": "setl_lxRm4NYMQsuldj",
+    "amount": 1795753,
+    "currency": "INR",
+    "status": "processed",
+    "fee": 36780,
+    "tax": 6617,
+    "utr": "UTRlxRm4NYMQsuldj",
+    "created_at": 1768608000,
+    "payment_ids": [
+      "pay_J3oB1IXvf8pnzG",
+      "pay_fqTkojMri1kiyo",
+      "pay_reKCMseeHMUL7Z",
+      "pay_pbULzR68SxwhDL",
+      "pay_FGrPGB51LWzdx2",
+      "pay_w04HCrIXSRpq1e",
+      "pay_skg36gGqqZVbyO"
+    ],
+    "refund_ids": []
+  },
+  {
+    "entity": "settlement",
+    "id": "setl_0uA1PjE0UbCUjH",
+    "amount": 1622377,
+    "currency": "INR",
+    "status": "processed",
+    "fee": 39486,
+    "tax": 7104,
+    "utr": "UTR0uA1PjE0UbCUjH",
+    "created_at": 1769126400,
+    "payment_ids": [
+      "pay_MG3EjH7Bsihrqv",
+      "pay_VRXrpoN7R9K6ju",
+      "pay_CZHXxwbxgZC78r",
+      "pay_oEGLNYMkETdqu8",
+      "pay_vj2xLSsQldldLe",
+      "pay_c1KUm1mcOmI3gX",
+      "pay_vKmR6SFBybiYiZ"
+    ],
+    "refund_ids": [
+      "rfnd_WmLLQGJgOfvutw",
+      "rfnd_Li0P5y7CEWu0o2"
+    ]
+  },
+  {
+    "entity": "settlement",
+    "id": "setl_OKd3fdnZZGslUH",
+    "amount": 1190188,
+    "currency": "INR",
+    "status": "processed",
+    "fee": 24378,
+    "tax": 4386,
+    "utr": "UTROKd3fdnZZGslUH",
+    "created_at": 1769472000,
+    "payment_ids": [
+      "pay_TVeiKcI4LOHcOg",
+      "pay_7LO15rVsDKUiXO",
+      "pay_T6BZPB4G3XJmK1"
+    ],
+    "refund_ids": []
+  }
+]

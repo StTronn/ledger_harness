@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "channels": [
+    {
+      "channel": "razorpay",
+      "fee_bps": 200,
+      "fee_gst_rate": 18
+    }
+  ]
+}

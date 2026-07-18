@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "world": "dtc",
+  "period": "2026-03",
+  "resolutions": [
+    {
+      "break_key": "check3:receivable-residual:",
+      "status": "resolved",
+      "postings": [
+        {
+          "event_id": "rfnd_2q9UwRRE21Gf2r",
+          "entry_type": "refund_reversal",
+          "recovered": [
+            {
+              "field": "gst_rate",
+              "value": "18",
+              "source": {
+                "tool": "getOrder",
+                "object": "order_4JBeBpmdz9tXpM",
+                "path": "notes.gst_rate"
+              }
+            }
+          ]
+        }
+      ],
+      "tools_used": [
+        "getOrder"
+      ],
+      "rationale": "receivable residual traced to 1 unbooked refund(s); recovered each refund's gst_rate from its order and proposed a refund_reversal"
+    }
+  ]
+}

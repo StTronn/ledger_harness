@@ -1,0 +1,20 @@
+{
+  "event": {
+    "event_id": "pay_vwFu1TzFyrOz9X",
+    "type": "payment",
+    "amount": 425728,
+    "order_id": "order_QXE8sbdU7IW2dD",
+    "sku": "MASK-5PK",
+    "booked": false
+  },
+  "recovered": {
+    "gst_rate": "5",
+    "_source": {
+      "object": "order_QXE8sbdU7IW2dD",
+      "path": "notes.gst_rate"
+    }
+  },
+  "applicable_entry_types": [
+    "dtc_sale"
+  ]
+}

@@ -33,9 +33,9 @@ Playback is a pure function of `(film, index)` — the UI only holds one number.
 
 ### Fixtures
 
-`packages/ledger-model/src/fixtures/*.film.json` are real close-agent runs
+`packages/ledger-model/src/fixtures/*.film.json` are real ledger-flow runs
 (`dtc/2026-05` clean, `dtc/2026-03` break period), generated from the journal. A future
-`close-agent` subcommand can emit this `LedgerFilm` JSON directly.
+`ledger-flow` subcommand can emit this `LedgerFilm` JSON directly.
 
 ## Run
 

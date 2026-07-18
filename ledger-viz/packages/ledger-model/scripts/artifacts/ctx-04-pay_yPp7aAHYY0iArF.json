@@ -1,0 +1,20 @@
+{
+  "event": {
+    "event_id": "pay_yPp7aAHYY0iArF",
+    "type": "payment",
+    "amount": 229002,
+    "order_id": "order_qnRax3LFRZr6Uo",
+    "sku": "KIT-DELUXE",
+    "booked": false
+  },
+  "recovered": {
+    "gst_rate": "18",
+    "_source": {
+      "object": "order_qnRax3LFRZr6Uo",
+      "path": "notes.gst_rate"
+    }
+  },
+  "applicable_entry_types": [
+    "dtc_sale"
+  ]
+}

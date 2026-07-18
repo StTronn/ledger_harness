@@ -1,0 +1,54 @@
+[
+  {
+    "entity": "refund",
+    "id": "rfnd_WSCMygE842krPC",
+    "amount": 290443,
+    "currency": "INR",
+    "payment_id": "pay_bROuN1lOL5DNTJ",
+    "status": "processed",
+    "created_at": 1770249600,
+    "notes": {
+      "sku": "SERUM-30",
+      "gst_rate": "18"
+    }
+  },
+  {
+    "entity": "refund",
+    "id": "rfnd_Ky9iRtvrx084lW",
+    "amount": 73606,
+    "currency": "INR",
+    "payment_id": "pay_SoBNRb1qiY449m",
+    "status": "processed",
+    "created_at": 1770854400,
+    "notes": {
+      "sku": "CREAM-50",
+      "gst_rate": "18"
+    }
+  },
+  {
+    "entity": "refund",
+    "id": "rfnd_HWV7OhahQiSSeR",
+    "amount": 473987,
+    "currency": "INR",
+    "payment_id": "pay_KccGTROXspntPd",
+    "status": "processed",
+    "created_at": 1770854400,
+    "notes": {
+      "sku": "TONER-200",
+      "gst_rate": "18"
+    }
+  },
+  {
+    "entity": "refund",
+    "id": "rfnd_AUg3aOXqZ7drfk",
+    "amount": 316170,
+    "currency": "INR",
+    "payment_id": "pay_jl2e2RyioJaWlk",
+    "status": "processed",
+    "created_at": 1771200000,
+    "notes": {
+      "sku": "TONER-200",
+      "gst_rate": "18"
+    }
+  }
+]

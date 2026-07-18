@@ -17,7 +17,7 @@ export interface LedgerGridProps {
 }
 
 /**
- * The transaction matrix: grouped column headers, a live "Current" balance row
+ * The ledger view: grouped column headers, a live "Current" balance row
  * (the running balance at the playhead), one row per step (signed deltas), and a
  * static "Ending" balance row, inside a horizontally scrollable card. Column
  * widths are fixed and shared across every row so the grid aligns perfectly.

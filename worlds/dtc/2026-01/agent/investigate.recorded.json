@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "world": "dtc",
+  "period": "2026-01",
+  "resolutions": [
+    {
+      "break_key": "check3:receivable-residual:",
+      "tools_used": [
+        "orders.fetch"
+      ],
+      "escalate": true,
+      "reason": "residual traces to 2 PARTIAL refund(s) whose intent (return vs goodwill credit) is unrecoverable from the snapshot — escalating to a human, never guessing"
+    }
+  ]
+}

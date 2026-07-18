@@ -5,7 +5,9 @@ function isObject(v: unknown): v is Record<string, unknown> {
 }
 
 /**
- * Shallow runtime validation of a parsed JSON value into a LedgerFilm.
+ * Shallow runtime validation of a parsed JSON value into a LedgerFilm. Review-only
+ * agent records do not belong in the ledger matrix, so legacy films with `agent`
+ * steps are omitted from the posted ledger view.
  * Throws on missing/invalid meta, accounts, or steps.
  */
 export function loadFilm(json: unknown): LedgerFilm {
@@ -32,5 +34,9 @@ export function loadFilm(json: unknown): LedgerFilm {
     throw new Error("loadFilm: missing or invalid 'steps'");
   }
 
-  return json as unknown as LedgerFilm;
+  const film = json as unknown as LedgerFilm;
+  const postedSteps = film.steps
+    .filter((step) => step.kind !== "agent")
+    .map((step, index) => ({ ...step, index }));
+  return { ...film, steps: postedSteps };
 }

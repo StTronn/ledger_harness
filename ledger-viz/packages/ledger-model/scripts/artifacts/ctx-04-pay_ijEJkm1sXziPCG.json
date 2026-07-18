@@ -1,0 +1,20 @@
+{
+  "event": {
+    "event_id": "pay_ijEJkm1sXziPCG",
+    "type": "payment",
+    "amount": 259487,
+    "order_id": "order_l4GNfGnck5aVyl",
+    "sku": "SERUM-30",
+    "booked": false
+  },
+  "recovered": {
+    "gst_rate": "12",
+    "_source": {
+      "object": "order_l4GNfGnck5aVyl",
+      "path": "notes.gst_rate"
+    }
+  },
+  "applicable_entry_types": [
+    "dtc_sale"
+  ]
+}

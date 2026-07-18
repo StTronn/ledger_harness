@@ -1,0 +1,249 @@
+{
+  "break": {
+    "key": "check3:receivable-residual:",
+    "check": 3,
+    "kind": "receivable-residual",
+    "expected": 0,
+    "actual": 248591,
+    "detail": "settlement-receivable residual 2485.91 at period end exceeds in-transit allowance 0.00 (balance 2485.91)"
+  },
+  "settlement": {
+    "id": "setl_7cUMy0YEFbweo4",
+    "amount": 1377669,
+    "utr": "UTR7cUMy0YEFbweo4",
+    "payment_ids": [
+      "pay_GJxVf3ftynHM1D",
+      "pay_diUvXLQejDgrFx",
+      "pay_QTPEjWZDoBv7sf",
+      "pay_XuJDug75ilg35G",
+      "pay_hlPye85ot4yQMg",
+      "pay_OdQcIEVl2WyDj0"
+    ],
+    "refund_ids": []
+  },
+  "batch": [
+    {
+      "event_id": "pay_GJxVf3ftynHM1D",
+      "type": "payment",
+      "amount": 257581,
+      "booked": true,
+      "gst_rate": "12"
+    },
+    {
+      "event_id": "pay_diUvXLQejDgrFx",
+      "type": "payment",
+      "amount": 129170,
+      "booked": true,
+      "gst_rate": "5"
+    },
+    {
+      "event_id": "pay_QTPEjWZDoBv7sf",
+      "type": "payment",
+      "amount": 488720,
+      "booked": true,
+      "gst_rate": "5"
+    },
+    {
+      "event_id": "pay_XuJDug75ilg35G",
+      "type": "payment",
+      "amount": 211153,
+      "booked": true,
+      "gst_rate": "18"
+    },
+    {
+      "event_id": "pay_hlPye85ot4yQMg",
+      "type": "payment",
+      "amount": 206125,
+      "booked": true,
+      "gst_rate": "18"
+    },
+    {
+      "event_id": "pay_OdQcIEVl2WyDj0",
+      "type": "payment",
+      "amount": 118213,
+      "booked": true,
+      "gst_rate": "5"
+    },
+    {
+      "event_id": "pay_F4c66U42YAiMTV",
+      "type": "payment",
+      "amount": 175287,
+      "booked": true,
+      "gst_rate": "18"
+    },
+    {
+      "event_id": "pay_bca6Wcjwd9E1mH",
+      "type": "payment",
+      "amount": 203012,
+      "booked": true,
+      "gst_rate": "5"
+    },
+    {
+      "event_id": "pay_por4Wp1geQ07Wc",
+      "type": "payment",
+      "amount": 232321,
+      "booked": true,
+      "gst_rate": "12"
+    },
+    {
+      "event_id": "pay_0Cat8oPFeJ4NDk",
+      "type": "payment",
+      "amount": 255057,
+      "booked": true,
+      "gst_rate": "5"
+    },
+    {
+      "event_id": "pay_k3CEBuiHw1AWD1",
+      "type": "payment",
+      "amount": 287971,
+      "booked": true,
+      "gst_rate": "5"
+    },
+    {
+      "event_id": "pay_hYofmhCLFXiwCV",
+      "type": "payment",
+      "amount": 328659,
+      "booked": true,
+      "gst_rate": "18"
+    },
+    {
+      "event_id": "pay_g89QGQyGfsQFW3",
+      "type": "payment",
+      "amount": 461512,
+      "booked": true,
+      "gst_rate": "12"
+    },
+    {
+      "event_id": "pay_OpSGYgMN2fFfUZ",
+      "type": "payment",
+      "amount": 375480,
+      "booked": true,
+      "gst_rate": "5"
+    },
+    {
+      "event_id": "pay_X7CHVdJLlCZCxV",
+      "type": "payment",
+      "amount": 350704,
+      "booked": true,
+      "gst_rate": "5"
+    },
+    {
+      "event_id": "pay_MntG9uWr9qZgCi",
+      "type": "payment",
+      "amount": 153915,
+      "booked": true,
+      "gst_rate": "18"
+    },
+    {
+      "event_id": "pay_ap9qGpscpMHNLT",
+      "type": "payment",
+      "amount": 95176,
+      "booked": true,
+      "gst_rate": "5"
+    },
+    {
+      "event_id": "pay_XvjVkqEqsxAS83",
+      "type": "payment",
+      "amount": 248591,
+      "booked": true,
+      "gst_rate": "18"
+    },
+    {
+      "event_id": "pay_Q8KhMFg3xZaOSR",
+      "type": "payment",
+      "amount": 105689,
+      "booked": true,
+      "gst_rate": "12"
+    },
+    {
+      "event_id": "pay_Ydm9LTHSfbr2yY",
+      "type": "payment",
+      "amount": 442128,
+      "booked": true,
+      "gst_rate": "12"
+    },
+    {
+      "event_id": "rfnd_2q9UwRRE21Gf2r",
+      "type": "refund",
+      "amount": 248591,
+      "booked": false,
+      "recovered": {
+        "gst_rate": "18",
+        "_source": {
+          "object": "order_4JBeBpmdz9tXpM",
+          "path": "notes.gst_rate"
+        }
+      }
+    },
+    {
+      "event_id": "pay_AHWTAqgkJpuK1y",
+      "type": "payment",
+      "amount": 431777,
+      "booked": true,
+      "gst_rate": "5"
+    },
+    {
+      "event_id": "pay_K2YcxX7lSzr0jB",
+      "type": "payment",
+      "amount": 324762,
+      "booked": true,
+      "gst_rate": "12"
+    },
+    {
+      "event_id": "pay_jTj3O1eNkl91yY",
+      "type": "payment",
+      "amount": 272754,
+      "booked": true,
+      "gst_rate": "18"
+    },
+    {
+      "event_id": "pay_hBJHAtkCKlNV7T",
+      "type": "payment",
+      "amount": 73269,
+      "booked": true,
+      "gst_rate": "5"
+    },
+    {
+      "event_id": "rfnd_JiMdFAmjDQH2xL",
+      "type": "refund",
+      "amount": 73269,
+      "booked": true,
+      "gst_rate": "5"
+    },
+    {
+      "event_id": "pay_VqwY21cXIb7B6b",
+      "type": "payment",
+      "amount": 198869,
+      "booked": true,
+      "gst_rate": "5"
+    },
+    {
+      "event_id": "pay_iB2PPjSVKi7Vo9",
+      "type": "payment",
+      "amount": 283461,
+      "booked": true,
+      "gst_rate": "18"
+    },
+    {
+      "event_id": "pay_w84RFI1y75hvZY",
+      "type": "payment",
+      "amount": 55865,
+      "booked": true,
+      "gst_rate": "18"
+    }
+  ],
+  "candidates": [
+    "setl_7cUMy0YEFbweo4",
+    "setl_dAucqgDBfKPA3r",
+    "setl_MAydKrgohLKmSv",
+    "setl_f8ZtZfgB4VEJI5",
+    "setl_alKiQc8PYUtJXC",
+    "setl_QUOWyYeO7IdSFi"
+  ],
+  "applicable_entry_types": [
+    "refund_reversal"
+  ],
+  "accounts": {
+    "assets/razorpay-settlement-receivable": 248591
+  }
+}
