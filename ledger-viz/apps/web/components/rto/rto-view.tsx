@@ -36,7 +36,7 @@ function PayoutCard({ film }: { film: RtoFilm }) {
     { label: "Per-shipment deductions", v: r.deductionsTotal, sign: "−", sub: `${film.deductions.length} lines — unexplained` },
   ];
   return (
-    <div className="border border-border bg-card">
+    <div className="h-full border border-border bg-card">
       <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
         <div>
           <Eyebrow>Courier payout · {meta.courier}</Eyebrow>
@@ -90,7 +90,7 @@ function PayoutCard({ film }: { film: RtoFilm }) {
 function BreakCard({ film }: { film: RtoFilm }) {
   const { meta } = film;
   return (
-    <div className="border border-border bg-card">
+    <div className="h-full border border-border bg-card">
       <div className="border-b border-border px-4 py-3">
         <Eyebrow>Reconcile · check #3 (cod-receivable)</Eyebrow>
         <div className="font-mono text-[13.5px] font-semibold tracking-tight text-amber-700 dark:text-amber-400">

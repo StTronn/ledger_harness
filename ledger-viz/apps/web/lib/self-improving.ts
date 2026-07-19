@@ -83,5 +83,40 @@ counterexamples: 0 confirmed cases with the same annotation`,
         },
       ],
     },
+    {
+      id: "optimization",
+      eyebrow: "A later extension",
+      title: "GEPA and other optimization paths",
+      blocks: [
+        {
+          kind: "p",
+          text: "GEPA is useful for a different part of the loop: improving the judgment agent's natural-language instructions. It reflects on execution traces, failures, and textual feedback, proposes prompt variants, and tests them while retaining candidates that work well on different cases.",
+        },
+        {
+          kind: "code",
+          text: `deterministic learning   repeated evidence → recovery policy
+GEPA                     traces + feedback → improved instructions
+few-shot optimization    approved examples → better demonstrations
+fine-tuning              larger curated dataset → adapted model weights`,
+        },
+        {
+          kind: "p",
+          text: "For this harness, GEPA could use agent traces, human edits, validator failures, and outcome feedback to improve classify or investigate guidance. Few-shot optimizers could select strong reviewed examples, while fine-tuning may become useful only after enough high-quality data exists.",
+        },
+        {
+          kind: "steps",
+          items: [
+            "Choose a narrow agent behavior to improve and freeze the evaluation rules first.",
+            "Keep the learning episodes used for optimization separate from held-out evaluation runs.",
+            "Compare candidates on correctness, escalation behavior, evidence use, cost, and latency—not one score alone.",
+            "Send the winning candidate through the same independent review and promotion gate as any other change.",
+          ],
+        },
+        {
+          kind: "note",
+          text: "Prompt optimization improves how the agent handles judgment; it does not replace deterministic recovery, accounting policy, or human authority. This is a rough future option, not a prerequisite for the first self-improving loop.",
+        },
+      ],
+    },
   ],
 };
