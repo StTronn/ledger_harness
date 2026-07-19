@@ -50,6 +50,12 @@ The `/self-improving` page assumes the prerequisite run and observation contract
 described in [`../docs/SELF-IMPROVEMENT-PREREQUISITES.md`](../docs/SELF-IMPROVEMENT-PREREQUISITES.md)
 already exist. They are not implemented by this visualization.
 
+> **Agent-layer status:** the current `close-agent/agent` implementation is
+> transitional. The agent runtime is expected to move to **Pi**, so its execution,
+> tool, trace, and orchestration boundaries will change. The self-improving harness
+> is still a rough target architecture; major runtime, data-contract, review,
+> evaluation, and integration work remains before the complete loop exists.
+
 The proposed evidence flow is:
 
 ```text
