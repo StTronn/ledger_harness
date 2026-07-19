@@ -1,10 +1,9 @@
 # ledger-flow
 
-Turn one month of a DTC brand's Razorpay activity into **balanced, reconciled, double-entry books** — then score the result against hidden ground truth. A deterministic posting and recovery engine handles routine accounting and prepares evidence for review. A small LLM agent reviews ambiguous classifications and reconciliation breaks; it never posts. The accounts and posting templates are the **chart of accounts (COA)**.
+Turn one month of a DTC brand's Razorpay activity into **balanced, reconciled, double-entry books** — then score the result against hidden ground truth. A deterministic posting and recovery engine handles routine accounting and prepares evidence for review. A judgment agent reviews ambiguous classifications and reconciliation breaks; it never posts. The accounts and posting templates are the **chart of accounts (COA)**.
 
-- **Design & contracts:** [`docs/SPEC.md`](docs/SPEC.md)
-- **Build state / decisions:** [`docs/HANDOVER.md`](docs/HANDOVER.md)
-- **Live agent service:** [`agent/README.md`](agent/README.md)
+Note: The agent will be migrated to pi and there are a lot of changes in agent architecture and how it integrates with the system
+
 
 ---
 
@@ -19,6 +18,21 @@ ingest → normalize → posting engine → ledger → reconcile → reports →
 ```
 
 The agent receives prepared recovery context and returns a review recommendation such as `{entry_type, params}` or an escalation. It never affects the ledger directly, never writes raw debits/credits, and never sees ground truth. Only deterministic or explicitly approved posting paths send entries to the ledger.
+
+## Current boundaries and direction
+
+The system keeps three states separate:
+
+1. **Posted ledger state** — entries that passed the deterministic posting and ledger boundaries.
+2. **Recovery and review state** — evidence, agent recommendations, human review, and escalations that do not automatically change the books.
+3. **Learning state** — a future projection in which completed run evidence becomes learning episodes and bounded improvement proposals.
+
+> **Agent-layer status:** the current [`agent/`](agent/) implementation is
+> transitional.
+>
+> - **Pi migration:** the agent runtime is expected to move to **Pi**.
+> - **Agent changes:** the execution, tool, trace, and orchestration boundaries
+>   still need to be redesigned around the new runtime.
 
 Three agent modes, all producing byte-identical results given the same inputs:
 
@@ -81,6 +95,9 @@ This is the agent's entire world: read-only, snapshotted, truth-free. Same surfa
 
 ## Running the live agent (OpenAI)
 
+> These instructions describe the current transitional agent service. They will
+> change as the agent layer moves to Pi.
+
 The deterministic + replay paths above need no key. To run the **live** LLM agent end-to-end, see [`agent/README.md`](agent/README.md). In short:
 
 ```sh
@@ -95,10 +112,6 @@ cd close-agent && PORT=8791 node --experimental-strip-types agent/src/main.ts &
 The live agent reasons over the same context bundles, returns `{entry_type, params}` or an escalation, and the Go side records the recommendation for review. It does not post or change the ledger.
 
 ---
-
-## Visualising a close
-
-[`ledger-viz/`](ledger-viz/) renders a posted ledger as a **transaction-matrix with playback** (rows = postings, columns = accounts, a movable playhead accumulating balances). It's fed by `*.film.json` fixtures generated from real close runs (`dtc/2026-05`, `dtc/2026-03`). See [`ledger-viz/README.md`](ledger-viz/README.md) to run it.
 
 ---
 
