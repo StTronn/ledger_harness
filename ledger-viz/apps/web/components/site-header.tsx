@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 
 const TABS = [
   { href: "/", label: "Harness" },
+  { href: "/self-improving", label: "Self-improving" },
   { href: "/ledger", label: "Ledger" },
   { href: "/run", label: "Example" },
   { href: "/rto", label: "RTO" },
@@ -22,24 +23,24 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md">
-      <div className="mx-auto flex w-full max-w-[1320px] items-center justify-between gap-4 px-5 py-3.5 sm:px-8">
-        <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div
-              aria-hidden
-              className="grid size-7 place-items-center rounded-md bg-foreground font-mono text-[13px] font-semibold leading-none tracking-tight text-background"
-            >
-              <span className="text-brand">§</span>
-            </div>
-            <span className="text-[14px] font-semibold tracking-tight">
-              ledger
-              <span className="font-normal text-muted-foreground">/viz</span>
-            </span>
-          </Link>
+      <div className="mx-auto flex w-full max-w-[1320px] flex-wrap items-center gap-x-3 gap-y-3 px-4 py-3 sm:flex-nowrap sm:gap-6 sm:px-8 sm:py-3.5">
+        <Link href="/" className="flex shrink-0 items-center gap-2.5">
+          <div
+            aria-hidden
+            className="grid size-7 place-items-center rounded-md bg-foreground font-mono text-[13px] font-semibold leading-none tracking-tight text-background"
+          >
+            <span className="text-brand">§</span>
+          </div>
+          <span className="text-[14px] font-semibold tracking-tight">
+            ledger
+            <span className="font-normal text-muted-foreground">/viz</span>
+          </span>
+        </Link>
 
+        <div className="order-3 basis-full sm:order-none sm:basis-auto">
           <nav
             aria-label="Views"
-            className="inline-flex items-center gap-0.5 border border-border bg-muted/50 p-0.5"
+            className="flex w-fit max-w-full items-center gap-0.5 overflow-x-auto border border-border bg-muted/50 p-0.5"
           >
             {TABS.map((t) => {
               const active = pathname === t.href;
@@ -49,7 +50,7 @@ export function SiteHeader() {
                   href={t.href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "px-3 py-1 text-[12.5px] font-medium outline-none transition-colors",
+                    "shrink-0 whitespace-nowrap px-3 py-1 text-[12.5px] font-medium outline-none transition-colors",
                     "focus-visible:ring-2 focus-visible:ring-ring/60",
                     active
                       ? "bg-card text-foreground ring-1 ring-border"
@@ -62,7 +63,10 @@ export function SiteHeader() {
             })}
           </nav>
         </div>
-        <ModeToggle />
+
+        <div className="ml-auto shrink-0">
+          <ModeToggle />
+        </div>
       </div>
     </header>
   );

@@ -14,7 +14,9 @@ export type Block =
   | { kind: "evidence" } // the recovery engine evidence paths
   | { kind: "context" } // the harness context schemas
   | { kind: "gst-policy" } // the GST recovery policy path
-  | { kind: "partial-refund-policy" }; // the partial-refund review path
+  | { kind: "partial-refund-policy" } // the partial-refund review path
+  | { kind: "self-improvement-evidence" } // run evidence joined into a learning episode
+  | { kind: "self-improvement-flow" }; // learning episode to bounded proposal
 
 export interface Section {
   id: string;

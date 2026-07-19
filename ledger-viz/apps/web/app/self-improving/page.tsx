@@ -1,8 +1,8 @@
-import { article } from "@/lib/explainer";
 import { SectionView } from "@/components/learn/article";
 import { SiteHeader } from "@/components/site-header";
+import { selfImprovingArticle } from "@/lib/self-improving";
 
-export default function Page() {
+export default function SelfImprovingPage() {
   return (
     <div className="min-h-screen overflow-x-clip">
       <SiteHeader />
@@ -11,27 +11,31 @@ export default function Page() {
         <div className="max-w-2xl space-y-3">
           <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
             <span aria-hidden className="h-px w-6 bg-brand" />
-            How it works
+            How it learns
           </p>
           <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl">
-            {article.title}
+            {selfImprovingArticle.title}
           </h1>
           <p className="text-pretty text-[15px] leading-relaxed text-muted-foreground">
-            {article.lede}
+            {selfImprovingArticle.lede}
           </p>
         </div>
 
         <nav className="flex flex-wrap gap-x-4 gap-y-1.5 border-y border-border/70 py-3 font-mono text-[11px] uppercase tracking-[0.14em]">
-          {article.sections.map((s) => (
-            <a key={s.id} href={`#${s.id}`} className="text-muted-foreground transition-colors hover:text-foreground">
-              {s.eyebrow}
+          {selfImprovingArticle.sections.map((section) => (
+            <a
+              key={section.id}
+              href={`#${section.id}`}
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {section.eyebrow}
             </a>
           ))}
         </nav>
 
         <div className="min-w-0 space-y-12">
-          {article.sections.map((s) => (
-            <SectionView key={s.id} section={s} />
+          {selfImprovingArticle.sections.map((section) => (
+            <SectionView key={section.id} section={section} />
           ))}
         </div>
       </main>

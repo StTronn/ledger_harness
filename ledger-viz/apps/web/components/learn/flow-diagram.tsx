@@ -1,5 +1,22 @@
 import type { ReactNode } from "react";
-import { ArrowDown, ArrowRight, Check, FileSearch, GitBranch, RefreshCw, Scale, ShieldAlert, Workflow } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowRight,
+  BrainCircuit,
+  Check,
+  ClipboardCheck,
+  Database,
+  FileSearch,
+  GitBranch,
+  Layers3,
+  Lightbulb,
+  MessageSquareText,
+  RefreshCw,
+  Scale,
+  ShieldAlert,
+  UserCheck,
+  Workflow,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 function FlowNode({
@@ -45,13 +62,18 @@ function DownArrow() {
   return <ArrowDown className="size-4 text-muted-foreground" aria-hidden />;
 }
 
-function RightArrow() {
-  return <ArrowRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />;
+function FlowArrow() {
+  return (
+    <>
+      <ArrowDown className="size-4 text-muted-foreground sm:hidden" aria-hidden />
+      <ArrowRight className="hidden size-4 shrink-0 text-muted-foreground sm:block" aria-hidden />
+    </>
+  );
 }
 
 export function FlowDiagram() {
   return (
-    <div className="border border-border bg-muted/20 p-4 sm:p-5" aria-label="ledger-flow decision path">
+    <div className="w-full min-w-0 max-w-full overflow-hidden border border-border bg-muted/20 p-4 sm:p-5" aria-label="ledger-flow decision path">
       <div className="flex flex-col items-center gap-2">
         <FlowNode label="Incoming event" detail="Razorpay payment, refund, settlement, or COD event" icon={FileSearch} />
         <DownArrow />
@@ -59,14 +81,14 @@ export function FlowDiagram() {
       </div>
 
       <div className="my-5 grid gap-4 border-y border-border py-5 sm:grid-cols-2 sm:gap-8">
-        <div className="flex items-center justify-center gap-3">
+        <div className="flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-3">
           <BranchLabel>Known rule</BranchLabel>
-          <RightArrow />
+          <FlowArrow />
           <FlowNode label="Double-entry ledger" detail="Validate and record" icon={Scale} tone="brand" />
         </div>
-        <div className="flex items-center justify-center gap-3">
+        <div className="flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-3">
           <BranchLabel>No rule</BranchLabel>
-          <RightArrow />
+          <FlowArrow />
           <FlowNode label="Recovery engine" detail="Find and validate missing facts" icon={FileSearch} />
         </div>
       </div>
@@ -100,7 +122,7 @@ export function FlowDiagram() {
       <div className="mt-5 border-t border-border pt-5">
         <div className="flex flex-col items-center gap-2 sm:flex-row sm:justify-center sm:gap-3">
           <FlowNode label="Reconciliation check" detail="Compare the ledger with settlements and bank data" icon={RefreshCw} />
-          <RightArrow />
+          <FlowArrow />
           <div className="flex items-center gap-2">
             <span className="border border-brand/50 bg-brand-soft px-2.5 py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-brand-foreground dark:text-brand">clean</span>
             <span className="border border-amber/50 bg-amber-soft px-2.5 py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-foreground">break → recovery</span>
@@ -123,24 +145,24 @@ export function EvidencePathDiagram() {
   ];
 
   return (
-    <div className="border border-border bg-muted/20 p-4 sm:p-5" aria-label="recovery engine evidence paths">
+    <div className="w-full min-w-0 max-w-full overflow-hidden border border-border bg-muted/20 p-4 sm:p-5" aria-label="recovery engine evidence paths">
       <div className="grid gap-3 sm:grid-cols-[minmax(0,0.8fr)_auto_minmax(0,1.2fr)_auto_minmax(0,0.9fr)] sm:items-center">
         <div className="border border-border bg-card px-3.5 py-3 text-center">
           <p className="text-[13px] font-semibold">Known edge case</p>
           <p className="mt-1 text-[11px] text-muted-foreground">A defined recovery policy applies</p>
         </div>
-        <ArrowRight className="mx-auto hidden size-4 text-muted-foreground sm:block" aria-hidden />
+        <FlowArrow />
 
         <div className="space-y-2 border border-border/70 p-3">
           {paths.map((path) => (
-            <div key={path.label} className="flex items-baseline justify-between gap-3 border-b border-border/70 pb-2 last:border-0 last:pb-0">
+            <div key={path.label} className="flex flex-col gap-1 border-b border-border/70 pb-2 last:border-0 last:pb-0 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
               <span className="text-[12px] font-medium">{path.label}</span>
-              <span className="text-right font-mono text-[10px] text-muted-foreground">{path.source}</span>
+              <span className="font-mono text-[10px] text-muted-foreground sm:text-right">{path.source}</span>
             </div>
           ))}
         </div>
 
-        <ArrowRight className="mx-auto hidden size-4 text-muted-foreground sm:block" aria-hidden />
+        <FlowArrow />
         <div className="border border-border bg-card px-3.5 py-3 text-center">
           <p className="text-[13px] font-semibold">Policy check</p>
           <p className="mt-1 text-[11px] text-muted-foreground">Validate source and meaning</p>
@@ -169,7 +191,7 @@ export function EvidencePathDiagram() {
 
 export function GstPolicyDiagram() {
   return (
-    <div className="border border-border bg-muted/20 p-4 sm:p-5" aria-label="GST recovery policy path">
+    <div className="w-full min-w-0 max-w-full overflow-hidden border border-border bg-muted/20 p-4 sm:p-5" aria-label="GST recovery policy path">
       <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
         <span className="h-px w-4 bg-border" aria-hidden />
         GST recovery policy
@@ -177,9 +199,9 @@ export function GstPolicyDiagram() {
 
       <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto_minmax(0,1.15fr)] sm:items-center">
         <FlowNode label="Payment miss" detail="gst_rate is empty" icon={FileSearch} />
-        <ArrowRight className="mx-auto hidden size-4 text-muted-foreground sm:block" aria-hidden />
+        <FlowArrow />
         <FlowNode label="Order source" detail="Read notes.gst_rate = 18" icon={FileSearch} />
-        <ArrowRight className="mx-auto hidden size-4 text-muted-foreground sm:block" aria-hidden />
+        <FlowArrow />
         <FlowNode label="Policy check" detail="18 is in the allowed set {5, 12, 18}" icon={Check} tone="brand" />
       </div>
 
@@ -188,7 +210,7 @@ export function GstPolicyDiagram() {
           <BranchLabel>Validated safe candidate</BranchLabel>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <FlowNode label="Posting engine" detail="Split sale with GST at 18%" icon={Workflow} tone="brand" />
-            <RightArrow />
+            <FlowArrow />
             <FlowNode label="Double-entry ledger" detail="Validate balance and record" icon={Scale} tone="brand" />
           </div>
         </div>
@@ -212,7 +234,7 @@ export function GstPolicyDiagram() {
 
 export function PartialRefundPolicyDiagram() {
   return (
-    <div className="border border-border bg-muted/20 p-4 sm:p-5" aria-label="partial refund recovery policy path">
+    <div className="w-full min-w-0 max-w-full overflow-hidden border border-border bg-muted/20 p-4 sm:p-5" aria-label="partial refund recovery policy path">
       <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
         <span className="h-px w-4 bg-border" aria-hidden />
         Partial-refund policy
@@ -220,9 +242,9 @@ export function PartialRefundPolicyDiagram() {
 
       <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto_minmax(0,1.15fr)] sm:items-center">
         <FlowNode label="Refund miss" detail="Partial refund has no complete posting rule" icon={FileSearch} />
-        <ArrowRight className="mx-auto hidden size-4 text-muted-foreground sm:block" aria-hidden />
+        <FlowArrow />
         <FlowNode label="Linked evidence" detail="Payment, order, items, and amounts" icon={FileSearch} />
-        <ArrowRight className="mx-auto hidden size-4 text-muted-foreground sm:block" aria-hidden />
+        <FlowArrow />
         <FlowNode label="Policy check" detail="Evidence does not prove which treatment to reverse" icon={ShieldAlert} tone="amber" />
       </div>
 
@@ -231,7 +253,7 @@ export function PartialRefundPolicyDiagram() {
           <BranchLabel>Review required</BranchLabel>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <FlowNode label="Harness context" detail="Prepared facts, citations, and booked state" icon={FileSearch} tone="amber" />
-            <RightArrow />
+            <FlowArrow />
             <FlowNode label="Judgment agent" detail="Recommend a treatment or escalate" icon={GitBranch} tone="amber" />
           </div>
         </div>
@@ -287,7 +309,7 @@ function ContextCard({
 
 export function HarnessContextDiagram() {
   return (
-    <div className="space-y-3 border border-border bg-muted/20 p-4 sm:p-5" aria-label="harness context schemas">
+    <div className="w-full min-w-0 max-w-full space-y-3 overflow-hidden border border-border bg-muted/20 p-4 sm:p-5" aria-label="harness context schemas">
       <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
         <span className="h-px w-4 bg-border" aria-hidden />
         Read-only context from the recovery engine
@@ -334,6 +356,119 @@ export function HarnessContextDiagram() {
         <span>→</span>
         <span>traceable review</span>
       </div>
+    </div>
+  );
+}
+
+export function SelfImprovementEvidenceDiagram() {
+  return (
+    <div
+      className="w-full min-w-0 max-w-full overflow-hidden border border-border bg-muted/20 p-4 sm:p-5"
+      aria-label="run evidence joined into a learning episode"
+    >
+      <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+        <span className="h-px w-4 bg-border" aria-hidden />
+        One completed close · four evidence views
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <FlowNode
+          label="Recovery observations"
+          detail="Rule miss, policies checked, cited facts, candidates, and selected route"
+          icon={FileSearch}
+        />
+        <FlowNode
+          label="Agent trace"
+          detail="Context, tool calls, recommendation or escalation, and validation result"
+          icon={MessageSquareText}
+          tone="amber"
+        />
+        <FlowNode
+          label="Human review"
+          detail="Approve, reject, edit, or escalate—with the corrected decision and reason"
+          icon={UserCheck}
+        />
+        <FlowNode
+          label="Observed outcome"
+          detail="Shadow result, reconciliation, confirmed answer, or later correction"
+          icon={ClipboardCheck}
+          tone="brand"
+        />
+      </div>
+
+      <div className="flex justify-center py-2">
+        <DownArrow />
+      </div>
+
+      <div className="border border-brand/50 bg-brand-soft p-3.5">
+        <div className="flex items-start gap-2.5">
+          <Layers3 className="mt-0.5 size-4 shrink-0 text-brand-foreground dark:text-brand" aria-hidden />
+          <div>
+            <p className="text-[13px] font-semibold">Learning episode</p>
+            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+              One joined account of the trigger, evidence, judgment, human response, and outcome. Every summary links back to the immutable run record.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <p className="mt-4 border-t border-border pt-4 text-center font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+        Structured observations are the contract · log messages remain supporting detail
+      </p>
+    </div>
+  );
+}
+
+export function SelfImprovementFlowDiagram() {
+  return (
+    <div
+      className="w-full min-w-0 max-w-full overflow-hidden border border-border bg-muted/20 p-4 sm:p-5"
+      aria-label="self-improving harness proposal flow"
+    >
+      <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+        <span className="h-px w-4 bg-border" aria-hidden />
+        Evidence to proposal
+      </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center">
+        <FlowNode label="Episode set" detail="Comparable reviewed cases from immutable runs" icon={Database} />
+        <FlowArrow />
+        <FlowNode label="Pattern builder" detail="Group repeated behavior and surface contradictions" icon={Layers3} />
+        <FlowArrow />
+        <FlowNode label="Meta-agent" detail="Diagnose the cause and test the evidence" icon={BrainCircuit} tone="amber" />
+      </div>
+
+      <div className="mt-4 grid gap-3 border-t border-border pt-4 sm:grid-cols-2">
+        <section className="border border-brand/50 bg-brand-soft p-3.5" aria-labelledby="bounded-proposal-path">
+          <BranchLabel>
+            <span id="bounded-proposal-path">Repeated and supported</span>
+          </BranchLabel>
+          <div className="mt-3 flex flex-col items-center gap-2 sm:flex-row sm:justify-between sm:gap-3">
+            <FlowNode label="Bounded proposal" detail="Recovery policy, agent guidance, or data-quality change" icon={Lightbulb} tone="brand" />
+            <FlowArrow />
+            <FlowNode label="Executor + evaluator" detail="Build and test separately; promotion stays gated" icon={Workflow} tone="brand" />
+          </div>
+        </section>
+
+        <section className="border border-dashed border-border bg-card p-3.5" aria-labelledby="no-change-path">
+          <BranchLabel>
+            <span id="no-change-path">Ambiguous or contradicted</span>
+          </BranchLabel>
+          <div className="mt-3 flex items-start gap-2.5">
+            <ShieldAlert className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+            <div>
+              <p className="text-[13px] font-semibold">No change</p>
+              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                Preserve human review when the evidence does not support a general rule.
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <p className="mt-4 border-t border-border pt-4 text-center font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+        The coordinator controls the process · the meta-agent supplies judgment
+      </p>
     </div>
   );
 }

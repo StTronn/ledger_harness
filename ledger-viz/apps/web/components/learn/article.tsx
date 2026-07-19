@@ -6,6 +6,8 @@ import {
   GstPolicyDiagram,
   HarnessContextDiagram,
   PartialRefundPolicyDiagram,
+  SelfImprovementEvidenceDiagram,
+  SelfImprovementFlowDiagram,
 } from "@/components/learn/flow-diagram";
 
 /**
@@ -24,7 +26,7 @@ function BlockView({ block }: { block: Block }) {
       );
     case "note":
       return (
-        <p className="border-l-2 border-brand bg-brand-soft px-4 py-3 text-[14px] leading-relaxed text-foreground/85">
+        <p className="w-full max-w-full break-words border-l-2 border-brand bg-brand-soft px-4 py-3 text-[14px] leading-relaxed text-foreground/85">
           {block.text}
         </p>
       );
@@ -57,12 +59,16 @@ function BlockView({ block }: { block: Block }) {
       return <GstPolicyDiagram />;
     case "partial-refund-policy":
       return <PartialRefundPolicyDiagram />;
+    case "self-improvement-evidence":
+      return <SelfImprovementEvidenceDiagram />;
+    case "self-improvement-flow":
+      return <SelfImprovementFlowDiagram />;
   }
 }
 
 export function SectionView({ section }: { section: Section }) {
   return (
-    <section id={section.id} className="scroll-mt-24 space-y-4">
+    <section id={section.id} className="min-w-0 max-w-full scroll-mt-24 space-y-4">
       <div className="space-y-1.5">
         <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
           <span aria-hidden className="h-px w-6 bg-brand" />
@@ -72,7 +78,7 @@ export function SectionView({ section }: { section: Section }) {
           {section.title}
         </h2>
       </div>
-      <div className="space-y-4">
+      <div className="min-w-0 max-w-full space-y-4">
         {section.blocks.map((b, i) => (
           <BlockView key={i} block={b} />
         ))}
